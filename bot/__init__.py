@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import requests
+from pyngrok import ngrok, conf
 from tzlocal import get_localzone
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from pyrogram import Client as tgClient, enums
@@ -14,7 +15,7 @@ from aria2p import API as ariaAPI, Client as ariaClient
 from qbittorrentapi import Client as qbClient
 # from faulthandler import enable as faulthandler_enable
 from socket import setdefaulttimeout
-from logging import getLogger, FileHandler, StreamHandler, INFO, basicConfig, error as log_error, info as log_info, warning as log_warning
+from logging import getLogger, FileHandler, StreamHandler, INFO, ERROR, basicConfig, error as log_error, info as log_info, warning as log_warning
 from uvloop import install
 
 # faulthandler_enable()
@@ -26,6 +27,9 @@ botStartTime = time()
 basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
             handlers=[FileHandler('log.txt'), StreamHandler()],
             level=INFO)
+
+getLogger("pyngrok.ngrok").setLevel(ERROR)
+getLogger("pyngrok.process").setLevel(ERROR)
 
 LOGGER = getLogger(__name__)
 
@@ -469,6 +473,29 @@ else:
         if v in ["", "*"]:
             del qb_opt[k]
     qb_client.app_set_preferences(qb_opt)
+
+NGROK_AUTH_TOKEN = environ.get('NGROK_AUTH_TOKEN')
+
+def start_ngrok() -> None:
+    log_info("Starting ngrok tunnel")
+    with open("/usr/src/app/ngrok.yml", "w") as config:
+        config.write(f"version: 2\nauthtoken: {NGROK_AUTH_TOKEN}\nregion: in\nconsole_ui: false\nlog_level: info")
+    ngrok_conf = conf.PyngrokConfig(
+        config_path="/usr/src/app/ngrok.yml",
+        auth_token=NGROK_AUTH_TOKEN,
+        region="in",
+        max_logs=5,
+        ngrok_version="v3",
+        monitor_thread=False)
+    try:
+        conf.set_default(ngrok_conf)
+        file_tunnel = ngrok.connect(addr=f"file://{DOWNLOAD_DIR}", proto="http", schemes=["http"], name="files_tunnel", inspect=False)
+        log_info(f"Ngrok tunnel started: {file_tunnel.public_url}")
+    except ngrok.PyngrokError as err:
+        log_error(f"Failed to start ngrok, error: {str(err)}")
+
+if NGROK_AUTH_TOKEN is not None:
+    start_ngrok()
 
 log_info("Creating client from BOT_TOKEN")
 bot = tgClient('bot', TELEGRAM_API, TELEGRAM_HASH, bot_token=BOT_TOKEN, workers=1000,
