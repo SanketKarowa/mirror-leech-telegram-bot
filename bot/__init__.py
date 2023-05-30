@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import requests
 from tzlocal import get_localzone
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from pyrogram import Client as tgClient, enums
@@ -28,6 +29,21 @@ basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
 
 LOGGER = getLogger(__name__)
 
+CONFIG_FILE_URL: str | None = environ.get('CONFIG_FILE_URL')
+if CONFIG_FILE_URL is not None:
+    log_info("Downloading config file")
+    try:
+        config_file = requests.get(url=CONFIG_FILE_URL)
+    except requests.exceptions.RequestException:
+        log_error("Failed to download config file")
+    else:
+        if config_file.ok:
+            with open('config.env', 'wt', encoding='utf-8') as f:
+                f.write(config_file.text)
+        else:
+            log_error("Failed to get config data")
+else:
+    log_error("CONFIG_FILE_URL is None")
 load_dotenv('config.env', override=True)
 
 Interval = []
