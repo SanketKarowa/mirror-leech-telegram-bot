@@ -5,13 +5,13 @@ from os import walk, path as ospath
 from html import escape
 from aioshutil import move
 from asyncio import create_subprocess_exec, sleep, Event
-
+from pyngrok import ngrok
 from bot import Interval, aria2, DOWNLOAD_DIR, download_dict, download_dict_lock, LOGGER, DATABASE_URL, \
     MAX_SPLIT_SIZE, config_dict, status_reply_dict_lock, user_data, non_queued_up, non_queued_dl, queued_up, \
     queued_dl, queue_dict_lock, GLOBAL_EXTENSION_FILTER
 from bot.helper.ext_utils.bot_utils import sync_to_async, get_readable_file_size
 from bot.helper.ext_utils.fs_utils import get_base_name, get_path_size, clean_download, clean_target, \
-    is_first_archive_split, is_archive, is_archive_split
+    is_first_archive_split, is_archive, is_archive_split, count_files_and_folders, get_mime_type
 from bot.helper.ext_utils.leech_utils import split_file
 from bot.helper.ext_utils.exceptions import NotSupportedExtractionArchive
 from bot.helper.ext_utils.task_manager import start_from_queued
@@ -62,6 +62,15 @@ class MirrorLeechListener:
             await delete_all_messages()
         except:
             pass
+
+    def get_ngrok_file_url(self) -> str:
+        ngrok_url = ''
+        try:
+            if tunnels := ngrok.get_tunnels():
+                ngrok_url += f"{tunnels[0].public_url}/{self.dir.removeprefix(DOWNLOAD_DIR)}"
+        except ngrok.PyngrokError:
+            LOGGER.warning(f"Failed to get ngrok url for: {self.dir}")
+        return ngrok_url
 
     async def onDownloadStart(self):
         if self.isSuperGroup and config_dict['INCOMPLETE_TASK_NOTIFIER'] and DATABASE_URL:
@@ -294,12 +303,19 @@ class MirrorLeechListener:
         elif self.upPath == 'gd':
             size = await get_path_size(path)
             LOGGER.info(f"Upload Name: {up_name}")
-            drive = GoogleDriveHelper(up_name, up_dir, self)
-            upload_status = GdriveStatus(drive, size, self.message, gid, 'up')
-            async with download_dict_lock:
-                download_dict[self.uid] = upload_status
+            # drive = GoogleDriveHelper(up_name, up_dir, self)
+            # upload_status = GdriveStatus(drive, size, self.message, gid, 'up')
+            # async with download_dict_lock:
+            #     download_dict[self.uid] = upload_status
             await update_all_messages()
-            await sync_to_async(drive.upload, up_name, size)
+            # await sync_to_async(drive.upload, up_name, size)
+            total_folders, total_files = await count_files_and_folders(up_dir)
+            file_path = f"{up_dir}/{up_name}"
+            if ospath.isfile(file_path):
+                mime_type = get_mime_type(file_path)
+            else:
+                mime_type = "Folder"
+            await self.onUploadComplete(self.get_ngrok_file_url(), size, total_files, total_folders, mime_type, up_name)
         else:
             size = await get_path_size(path)
             LOGGER.info(f"Upload Name: {up_name}")
@@ -386,7 +402,7 @@ class MirrorLeechListener:
                 await start_from_queued()
                 return
 
-        await clean_download(self.dir)
+        # await clean_download(self.dir)
         async with download_dict_lock:
             if self.uid in download_dict.keys():
                 del download_dict[self.uid]
