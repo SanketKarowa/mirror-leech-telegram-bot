@@ -8,9 +8,9 @@ from time import time
 from sys import executable
 from pyrogram.handlers import MessageHandler
 from pyrogram.filters import command
-from asyncio import create_subprocess_exec, gather
-
-from bot import bot, botStartTime, LOGGER, Interval, DATABASE_URL, QbInterval, INCOMPLETE_TASK_NOTIFIER, scheduler
+from asyncio import create_subprocess_exec, gather, sleep
+from pyngrok import ngrok, conf
+from bot import bot, botStartTime, LOGGER, Interval, DATABASE_URL, QbInterval, INCOMPLETE_TASK_NOTIFIER, scheduler, DOWNLOAD_DIR
 from .helper.ext_utils.fs_utils import start_cleanup, clean_all, exit_clean_up
 from .helper.ext_utils.bot_utils import get_readable_file_size, get_readable_time, cmd_exec, sync_to_async
 from .helper.ext_utils.db_handler import DbManger
@@ -137,11 +137,32 @@ NOTE: Try each command without any argument to see more detalis.
 /{BotCommands.ExecCommand}: Run Commands In Exec (Only Owner).
 /{BotCommands.ClearLocalsCommand}: Clear {BotCommands.EvalCommand} or {BotCommands.ExecCommand} locals (Only Owner).
 /{BotCommands.RssCommand}: RSS Menu.
+/{BotCommands.NgrokCommand}: Show the Ngrok URL to access files
 '''
 
 
 async def bot_help(client, message):
     await sendMessage(message, help_string)
+
+
+async def ngrok_info(client, message) -> None:
+    LOGGER.info("Getting ngrok tunnel info")
+    try:
+        if tunnels := ngrok.get_tunnels():
+            await sendMessage(message, f"🌐 <b>Ngrok URL:</b> {tunnels[0].public_url}")
+        else:
+            raise IndexError("No tunnel found")
+    except (IndexError, ngrok.PyngrokNgrokURLError, ngrok.PyngrokNgrokHTTPError):
+        LOGGER.warning(f"Failed to get ngrok tunnel, restarting")
+        try:
+            if ngrok.process.is_process_running(conf.get_default().ngrok_path) is True:
+                ngrok.kill()
+                await sleep(1)
+            file_tunnel = ngrok.connect(addr=f"file://{DOWNLOAD_DIR}", proto="http", schemes=["http"], name="files_tunnel", inspect=False)
+            await sendMessage(message, f"🌍 <b>Ngrok tunnel started\nURL:</b> {file_tunnel.public_url}")
+        except ngrok.PyngrokError as err:
+            LOGGER.error("Failed to start ngrok tunnel")
+            await sendMessage(message, f"⁉️ <b>Failed to get tunnel info</b>\nError: <code>{str(err)}</code>")
 
 
 async def restart_notification():
@@ -199,6 +220,7 @@ async def main():
         BotCommands.HelpCommand) & CustomFilters.authorized))
     bot.add_handler(MessageHandler(stats, filters=command(
         BotCommands.StatsCommand) & CustomFilters.authorized))
+    bot.add_handler(MessageHandler(ngrok_info, filters=command(BotCommands.NgrokCommand) & CustomFilters.authorized))
     LOGGER.info("Bot Started!")
     signal(SIGINT, exit_clean_up)
 

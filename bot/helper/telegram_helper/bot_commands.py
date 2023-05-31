@@ -53,6 +53,7 @@ class _BotCommands:
         self.UserSetCommand = f'usetting{CMD_SUFFIX}'
         self.BtSelectCommand = f'btsel{CMD_SUFFIX}'
         self.RssCommand = f'rss{CMD_SUFFIX}'
+        self.NgrokCommand = f'ngrok{CMD_SUFFIX}'
 
 
 BotCommands = _BotCommands()
