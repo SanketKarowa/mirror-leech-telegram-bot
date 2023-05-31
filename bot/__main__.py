@@ -70,6 +70,9 @@ Type /{BotCommands.HelpCommand} to get a list of available commands
 
 async def restart(client, message):
     restart_message = await sendMessage(message, "Restarting...")
+    LOGGER.info("Stopping ngrok process")
+    ngrok.get_ngrok_process().stop_monitor_thread()
+    ngrok.kill(conf.get_default())
     if scheduler.running:
         scheduler.shutdown(wait=False)
     for interval in [QbInterval, Interval]:

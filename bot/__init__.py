@@ -489,7 +489,7 @@ def start_ngrok() -> None:
         monitor_thread=False)
     try:
         conf.set_default(ngrok_conf)
-        file_tunnel = ngrok.connect(addr=f"file://{DOWNLOAD_DIR}", proto="http", schemes=["http"], name="files_tunnel", inspect=False)
+        file_tunnel = ngrok.connect(addr=f"file://{DOWNLOAD_DIR}", proto="http", schemes=["https"], name="files_tunnel", inspect=False)
         log_info(f"Ngrok tunnel started: {file_tunnel.public_url}")
     except ngrok.PyngrokError as err:
         log_error(f"Failed to start ngrok, error: {str(err)}")
