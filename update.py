@@ -1,7 +1,7 @@
 from logging import FileHandler, StreamHandler, INFO, basicConfig, error as log_error, info as log_info
 from os import path as ospath, environ, remove
 from subprocess import run as srun
-from requests import get as rget
+from requests import get as rget, exceptions
 from dotenv import load_dotenv, dotenv_values
 from pymongo import MongoClient
 
@@ -16,6 +16,21 @@ basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
             handlers=[FileHandler('log.txt'), StreamHandler()],
             level=INFO)
 
+CONFIG_FILE_URL: str | None = environ.get('CONFIG_FILE_URL')
+if CONFIG_FILE_URL is not None:
+    log_info("Downloading config file")
+    try:
+        config_file = rget(url=CONFIG_FILE_URL)
+    except exceptions.RequestException:
+        log_error("Failed to download config file")
+    else:
+        if config_file.ok:
+            with open('config.env', 'wt', encoding='utf-8') as f:
+                f.write(config_file.text)
+        else:
+            log_error("Failed to get config data")
+else:
+    log_error("CONFIG_FILE_URL is None")
 load_dotenv('config.env', override=True)
 
 try:
