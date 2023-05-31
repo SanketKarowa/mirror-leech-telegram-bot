@@ -12,6 +12,7 @@ from bot.helper.telegram_helper.filters import CustomFilters
 from bot.helper.telegram_helper.bot_commands import BotCommands
 from bot.helper.telegram_helper.message_utils import sendFile, sendMessage
 from bot.helper.ext_utils.bot_utils import sync_to_async, new_task
+from bot.helper.ext_utils.fs_utils import clean_all
 
 namespaces = {}
 
@@ -108,6 +109,7 @@ async def clear(client, message):
     global namespaces
     if message.chat.id in namespaces:
         del namespaces[message.chat.id]
+    clean_all()
     await send("Locals Cleared.", message)
 
 

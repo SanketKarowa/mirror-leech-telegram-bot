@@ -10,8 +10,8 @@ from bot.helper.ext_utils.fs_utils import clean_unwanted
 from bot.helper.ext_utils.task_manager import stop_duplicate_check
 
 
-async def __remove_torrent(client, hash_, tag):
-    await sync_to_async(client.torrents_delete, torrent_hashes=hash_, delete_files=True)
+async def __remove_torrent(client, hash_, tag, del_files=True):
+    await sync_to_async(client.torrents_delete, torrent_hashes=hash_, delete_files=del_files)
     async with qb_listener_lock:
         if tag in QbTorrents:
             del QbTorrents[tag]
@@ -44,7 +44,7 @@ async def __onSeedFinish(tor):
     client = download.client()
     msg = f"Seeding stopped with Ratio: {round(tor.ratio, 3)} and Time: {get_readable_time(tor.seeding_time)}"
     await listener.onUploadError(msg)
-    await __remove_torrent(client, ext_hash, tor.tags)
+    await __remove_torrent(client, ext_hash, tor.tags, False)
 
 
 @new_task
@@ -83,7 +83,7 @@ async def __onDownloadComplete(tor):
             else:
                 removed = True
         if removed:
-            await __remove_torrent(client, ext_hash, tag)
+            await __remove_torrent(client, ext_hash, tag, False)
             return
         async with qb_listener_lock:
             if tag in QbTorrents:
@@ -94,7 +94,7 @@ async def __onDownloadComplete(tor):
         LOGGER.info(f"Seeding started: {tor.name} - Hash: {ext_hash}")
         await sync_to_async(client.auth_log_out)
     else:
-        await __remove_torrent(client, ext_hash, tag)
+        await __remove_torrent(client, ext_hash, tag, False)
 
 
 async def __qb_listener():
