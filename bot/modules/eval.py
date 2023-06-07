@@ -6,8 +6,8 @@ from traceback import format_exc
 from textwrap import indent
 from io import StringIO, BytesIO
 from contextlib import redirect_stdout
-
-from bot import LOGGER, bot
+from aiofiles.os import makedirs
+from bot import LOGGER, bot, DOWNLOAD_DIR
 from bot.helper.telegram_helper.filters import CustomFilters
 from bot.helper.telegram_helper.bot_commands import BotCommands
 from bot.helper.telegram_helper.message_utils import sendFile, sendMessage
@@ -110,6 +110,7 @@ async def clear(client, message):
     if message.chat.id in namespaces:
         del namespaces[message.chat.id]
     clean_all()
+    await makedirs(DOWNLOAD_DIR, exist_ok=True)
     await send("Locals Cleared.", message)
 
 

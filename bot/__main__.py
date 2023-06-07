@@ -149,7 +149,7 @@ async def ngrok_info(client, message) -> None:
             if ngrok.process.is_process_running(conf.get_default().ngrok_path) is True:
                 ngrok.kill()
                 await sleep(1)
-            file_tunnel = ngrok.connect(addr=f"file://{DOWNLOAD_DIR}", proto="http", schemes=["http"], name="files_tunnel", inspect=False)
+            file_tunnel = ngrok.connect(addr=f"file://{DOWNLOAD_DIR}", proto="http", schemes=["https"], name="files_tunnel", inspect=False)
             await sendMessage(message, f"🌍 <b>Ngrok tunnel started\nURL:</b> {file_tunnel.public_url}")
         except ngrok.PyngrokError as err:
             LOGGER.error("Failed to start ngrok tunnel")
