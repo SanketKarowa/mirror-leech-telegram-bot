@@ -46,6 +46,7 @@ if CONFIG_FILE_URL is not None:
                 f.write(config_file.text)
         else:
             log_error("Failed to get config data")
+        config_file.close()
 else:
     log_error("CONFIG_FILE_URL is None")
 load_dotenv('config.env', override=True)

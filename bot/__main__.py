@@ -197,7 +197,7 @@ async def restart_notification():
 
 
 async def main():
-    await gather(start_cleanup(), torrent_search.initiate_search_tools(), restart_notification())
+    await gather(torrent_search.initiate_search_tools(), restart_notification())
     await sync_to_async(start_aria2_listener, wait=False)
 
     bot.add_handler(MessageHandler(
