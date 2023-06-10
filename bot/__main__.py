@@ -2,7 +2,7 @@
 from signal import signal, SIGINT
 from aiofiles.os import path as aiopath, remove as aioremove
 from aiofiles import open as aiopen
-from os import execl as osexecl
+from os import execl as osexecl, environ
 from psutil import disk_usage, cpu_percent, swap_memory, cpu_count, virtual_memory, net_io_counters, boot_time
 from time import time
 from sys import executable
@@ -10,6 +10,7 @@ from pyrogram.handlers import MessageHandler
 from pyrogram.filters import command
 from asyncio import create_subprocess_exec, gather, sleep
 from pyngrok import ngrok, conf
+from requests import get, exceptions
 from bot import bot, botStartTime, LOGGER, Interval, DATABASE_URL, QbInterval, INCOMPLETE_TASK_NOTIFIER, scheduler, DOWNLOAD_DIR
 from .helper.ext_utils.fs_utils import start_cleanup, clean_all, exit_clean_up
 from .helper.ext_utils.bot_utils import get_readable_file_size, get_readable_time, cmd_exec, sync_to_async
@@ -136,11 +137,35 @@ async def bot_help(client, message):
     await sendMessage(message, help_string)
 
 
+def get_host_ngrok_info() -> str:
+    ngrok_api_url = []
+    msg = ""
+    for host_url in environ.get('NGROK_HOST_URL', '').split():
+        ngrok_api_url.append(f"{host_url}/api/tunnels")
+    for url in ngrok_api_url:
+        LOGGER.info(f"Fetching host ngrok tunnels info: {url}")
+        try:
+            response = get(url, headers={'Content-Type': 'application/json'})
+            if response.ok:
+                tunnels = response.json()["tunnels"]
+                for tunnel in tunnels:
+                    if "ssh" not in tunnel["name"].lower():
+                        msg += f'\n⚡ <b>{tunnel["name"]}</b>: <a href="{tunnel["public_url"]}">Click Here</a>'
+                    else:
+                        msg += f'\n⚡ <b>{tunnel["name"]}</b>: <code>{tunnel["public_url"]}</code>'
+            else:
+                LOGGER.error(f"Unable to get response from {url}")
+            response.close()
+        except exceptions.RequestException as err:
+            LOGGER.error(f"Failed to get ngrok info from {url} [{err.__class__.__name__}]")
+    return msg
+
+
 async def ngrok_info(client, message) -> None:
     LOGGER.info("Getting ngrok tunnel info")
     try:
         if tunnels := ngrok.get_tunnels():
-            await sendMessage(message, f"🌐 <b>Ngrok URL:</b> {tunnels[0].public_url}")
+            await sendMessage(message, f"🌐 <b>Bot file server</b>: <a href='{tunnels[0].public_url}'>Click Here</a>{get_host_ngrok_info()}")
         else:
             raise IndexError("No tunnel found")
     except (IndexError, ngrok.PyngrokNgrokURLError, ngrok.PyngrokNgrokHTTPError):
@@ -150,7 +175,7 @@ async def ngrok_info(client, message) -> None:
                 ngrok.kill()
                 await sleep(1)
             file_tunnel = ngrok.connect(addr=f"file://{DOWNLOAD_DIR}", proto="http", schemes=["https"], name="files_tunnel", inspect=False)
-            await sendMessage(message, f"🌍 <b>Ngrok tunnel started\nURL:</b> {file_tunnel.public_url}")
+            await sendMessage(message, f"🌍 <b>Ngrok tunnel started\n⚡ Bot file server</b>: <a href='{file_tunnel.public_url}'>Click Here</a>{get_host_ngrok_info()}")
         except ngrok.PyngrokError as err:
             LOGGER.error("Failed to start ngrok tunnel")
             await sendMessage(message, f"⁉️ <b>Failed to get tunnel info</b>\nError: <code>{str(err)}</code>")
