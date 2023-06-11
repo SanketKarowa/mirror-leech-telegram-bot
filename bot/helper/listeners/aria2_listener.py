@@ -87,13 +87,13 @@ async def __onDownloadComplete(api, gid):
                     f"Cancelling Seed: {download.name} onDownloadComplete")
                 listener = dl.listener()
                 await listener.onUploadError(f"Seeding stopped with Ratio: {dl.ratio()} and Time: {dl.seeding_time()}")
-                await sync_to_async(api.remove, [download], force=True, files=False)
+                # await sync_to_async(api.remove, [download], force=True, files=False)
     else:
         LOGGER.info(f"onDownloadComplete: {download.name} - Gid: {gid}")
         if dl := await getDownloadByGid(gid):
             listener = dl.listener()
             await listener.onDownloadComplete()
-            await sync_to_async(api.remove, [download], force=True, files=False)
+            # await sync_to_async(api.remove, [download], force=True, files=False)
 
 
 @new_thread
@@ -143,8 +143,8 @@ async def __onBtDownloadComplete(api, gid):
                     download_dict[listener.uid].start_time = seed_start_time
                 LOGGER.info(f"Seeding started: {download.name} - Gid: {gid}")
                 await update_all_messages()
-        else:
-            await sync_to_async(api.remove, [download], force=True, files=False)
+        # else:
+        #     await sync_to_async(api.remove, [download], force=True, files=False)
 
 
 @new_thread

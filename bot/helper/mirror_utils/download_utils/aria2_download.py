@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from aiofiles.os import remove as aioremove, path as aiopath
 
-from bot import aria2, download_dict_lock, download_dict, LOGGER, config_dict, aria2_options, aria2c_global, non_queued_dl, queue_dict_lock
+from bot import aria2, download_dict_lock, download_dict, LOGGER, config_dict, aria2_options, aria2c_global, non_queued_dl, queue_dict_lock, BT_TRACKERS_ARIA
 from bot.helper.ext_utils.bot_utils import bt_selection_buttons, sync_to_async
 from bot.helper.mirror_utils.status_utils.aria2_status import Aria2Status
 from bot.helper.telegram_helper.message_utils import sendStatusMessage, sendMessage
@@ -28,6 +28,7 @@ async def add_aria2c_download(link, path, listener, filename, auth, ratio, seed_
             a2c_opt['pause-metadata'] = 'true'
         else:
             a2c_opt['pause'] = 'true'
+    a2c_opt['bt-tracker'] = BT_TRACKERS_ARIA
     try:
         download = (await sync_to_async(aria2.add, link, a2c_opt))[0]
     except Exception as e:

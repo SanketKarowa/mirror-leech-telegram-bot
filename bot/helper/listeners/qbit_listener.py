@@ -93,8 +93,8 @@ async def __onDownloadComplete(tor):
         await update_all_messages()
         LOGGER.info(f"Seeding started: {tor.name} - Hash: {ext_hash}")
         await sync_to_async(client.auth_log_out)
-    else:
-        await __remove_torrent(client, ext_hash, tag, False)
+    # else:
+    #     await __remove_torrent(client, ext_hash, tag, False)
 
 
 async def __qb_listener():
