@@ -482,8 +482,8 @@ def aria2c_init():
         log_error(f"Aria2c initializing error: {e}")
 
 
-Thread(target=aria2c_init).start()
-sleep(1.5)
+# Thread(target=aria2c_init).start()
+# sleep(1.5)
 
 aria2c_global = ['bt-max-open-files', 'download-result', 'keep-unfinished-download-result', 'log', 'log-level',
                  'max-concurrent-downloads', 'max-download-result', 'max-overall-download-limit', 'save-session',
