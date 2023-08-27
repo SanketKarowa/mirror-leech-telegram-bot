@@ -127,7 +127,7 @@ async def _mirror_leech(client, message, isQbit=False, isLeech=False, sameDir=No
 
     __run_multi()
 
-    path = f'{DOWNLOAD_DIR}{message.id}{folder_name}'
+    path = f'{DOWNLOAD_DIR}_bot{folder_name}'
 
     if len(text) > 1 and text[1].startswith('Tag: '):
         tag, id_ = text[1].split('Tag: ')[1].split()
