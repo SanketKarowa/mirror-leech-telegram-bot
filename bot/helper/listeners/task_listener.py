@@ -43,7 +43,7 @@ class MirrorLeechListener:
         self.tag = tag
         self.seed = seed
         self.newDir = ""
-        self.dir = f"{DOWNLOAD_DIR}{self.uid}"
+        self.dir = f"{DOWNLOAD_DIR}_bot"
         self.select = select
         self.isSuperGroup = self.message.chat.type.name in ['SUPERGROUP', 'CHANNEL']
         self.suproc = None
