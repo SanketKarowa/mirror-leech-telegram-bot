@@ -244,10 +244,10 @@ class YoutubeDLHelper:
         elif not self.__listener.isLeech:
             self.opts['writethumbnail'] = False
 
-        msg, button = await stop_duplicate_check(self.name, self.__listener)
-        if msg:
-            await self.__listener.onDownloadError(msg, button)
-            return
+        # msg, button = await stop_duplicate_check(self.name, self.__listener)
+        # if msg:
+        #    await self.__listener.onDownloadError(msg, button)
+        #    return
 
         added_to_queue, event = await is_queued(self.__listener.uid)
         if added_to_queue:
