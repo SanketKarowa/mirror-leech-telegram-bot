@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from requests import utils as rutils
-from aiofiles.os import path as aiopath, remove as aioremove, listdir, makedirs
+from aiofiles.os import path as aiopath, remove as aioremove, listdir, makedirs, rename
 from os import walk, path as ospath
 from html import escape
 from aioshutil import move
@@ -350,6 +350,10 @@ class MirrorLeechListener:
                 mime_type = get_mime_type(file_path)
             else:
                 mime_type = "Folder"
+            new_path = f"{DOWNLOAD_DIR}{up_name}"
+            LOGGER.info(f"Renaming {up_dir} to {new_path}")
+            await rename(self.dir, f"{DOWNLOAD_DIR}{up_name}")
+            self.dir = new_path
             await self.onUploadComplete(self.get_ngrok_file_url(), size, total_files, total_folders, mime_type, up_name)
         else:
             size = await get_path_size(up_path)
