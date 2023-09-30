@@ -37,7 +37,7 @@ CONFIG_FILE_URL: str | None = environ.get('CONFIG_FILE_URL')
 if CONFIG_FILE_URL is not None:
     log_info("Downloading config file")
     try:
-        config_file = requests.get(url=CONFIG_FILE_URL)
+        config_file = requests.get(url=CONFIG_FILE_URL, timeout=5)
     except requests.exceptions.RequestException:
         log_error("Failed to download config file")
     else:
@@ -50,6 +50,21 @@ if CONFIG_FILE_URL is not None:
 else:
     log_error("CONFIG_FILE_URL is None")
 load_dotenv('config.env', override=True)
+
+TOKEN_PICKLE_FILE_URL: str | None = environ.get('TOKEN_PICKLE_FILE_URL')
+if TOKEN_PICKLE_FILE_URL is not None:
+    log_info("Downloading token.pickle file")
+    try:
+        pickle_file = requests.get(url=TOKEN_PICKLE_FILE_URL, timeout=5)
+    except requests.exceptions.RequestException:
+        log_error("Failed to download token.pickle file")
+    else:
+        if pickle_file.ok:
+            with open("/usr/src/app/token.pickle", 'wb') as f:
+                f.write(pickle_file.content)
+        else:
+            log_warning("Failed to get pickle file data")
+        pickle_file.close()
 
 Interval = []
 QbInterval = []
@@ -79,7 +94,7 @@ def get_trackers() -> None:
     BT_TRACKERS_ARIA += '['
     for index, url in enumerate(TRACKER_URLS):
         try:
-            track_resp = requests.get(url=url)
+            track_resp = requests.get(url=url, timeout=5)
             if track_resp.ok:
                 if index == 0:
                     sep = '\n\n'
