@@ -350,7 +350,7 @@ class MirrorLeechListener:
                 mime_type = get_mime_type(file_path)
             else:
                 mime_type = "Folder"
-            new_path = f"{DOWNLOAD_DIR}{up_name}"
+            new_path = ''.join(letter for letter in f"{DOWNLOAD_DIR}{up_name}" if letter.isalnum())
             LOGGER.info(f"Renaming {up_dir} to {new_path}")
             await rename(self.dir, f"{DOWNLOAD_DIR}{up_name}")
             self.dir = new_path
