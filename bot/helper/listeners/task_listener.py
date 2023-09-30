@@ -70,10 +70,9 @@ class MirrorLeechListener:
         try:
             if tunnels := ngrok.get_tunnels():
                 ngrok_url += f"{tunnels[0].public_url}/{self.dir.removeprefix(DOWNLOAD_DIR)}"
-                ngrok_url = escape(ngrok_url)
         except ngrok.PyngrokError:
             LOGGER.warning(f"Failed to get ngrok url for: {self.dir}")
-        return ngrok_url
+        return escape(ngrok_url)
 
     async def onDownloadStart(self):
         if self.isSuperGroup and config_dict['INCOMPLETE_TASK_NOTIFIER'] and DATABASE_URL:
@@ -351,7 +350,7 @@ class MirrorLeechListener:
                 mime_type = get_mime_type(file_path)
             else:
                 mime_type = "Folder"
-            new_path = f"{DOWNLOAD_DIR}" + ''.join(letter for letter in f"{up_name}" if letter.isalnum() or letter in [' ', '.', '-', '_'])
+            new_path = f"{DOWNLOAD_DIR}" + "_".join(''.join(letter for letter in f"{up_name}" if letter.isalnum() or letter in ['.', '-', '_']).split())
             LOGGER.info(f"Renaming {up_dir} to {new_path}")
             await rename(self.dir, new_path)
             self.dir = new_path
