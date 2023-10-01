@@ -11,7 +11,7 @@ from pyrogram.filters import command
 from asyncio import create_subprocess_exec, gather, sleep
 from pyngrok import ngrok, conf
 from requests import get, exceptions
-from bot import bot, botStartTime, LOGGER, Interval, DATABASE_URL, QbInterval, INCOMPLETE_TASK_NOTIFIER, scheduler, DOWNLOAD_DIR
+from bot import bot, botStartTime, LOGGER, Interval, DATABASE_URL, QbInterval, INCOMPLETE_TASK_NOTIFIER, scheduler, DOWNLOAD_DIR, YTDL_DOWNLOAD_DIR
 from .helper.ext_utils.fs_utils import start_cleanup, clean_all, exit_clean_up
 from .helper.ext_utils.bot_utils import get_readable_file_size, get_readable_time, cmd_exec, sync_to_async
 from .helper.ext_utils.db_handler import DbManger
@@ -21,7 +21,7 @@ from .helper.telegram_helper.filters import CustomFilters
 from .helper.telegram_helper.button_build import ButtonMaker
 from bot.helper.listeners.aria2_listener import start_aria2_listener
 from .modules import authorize, clone, gd_count, gd_delete, cancel_mirror, gd_search, mirror_leech, status, torrent_search, torrent_select, ytdlp, rss, shell, eval, users_settings, bot_settings
-
+from aiofiles.os import makedirs
 
 async def stats(_, message):
     if await aiopath.exists('.git'):
@@ -222,6 +222,7 @@ async def restart_notification():
 
 
 async def main():
+    await makedirs(name=YTDL_DOWNLOAD_DIR, exist_ok=True)
     await gather(torrent_search.initiate_search_tools(), restart_notification())
     await sync_to_async(start_aria2_listener, wait=False)
 
