@@ -31,7 +31,7 @@ from bot.helper.ext_utils.db_handler import DbManger
 
 
 class MirrorLeechListener:
-    def __init__(self, message, compress=False, extract=False, isQbit=False, isLeech=False, tag=None, select=False, seed=False, sameDir=None, rcFlags=None, upDest=None, join=False):
+    def __init__(self, message, compress=False, extract=False, isQbit=False, isLeech=False, tag=None, select=False, seed=False, sameDir=None, rcFlags=None, upDest=None, join=False, dl_dir=None):
         if sameDir is None:
             sameDir = {}
         self.message = message
@@ -43,7 +43,7 @@ class MirrorLeechListener:
         self.tag = tag
         self.seed = seed
         self.newDir = ""
-        self.dir = f"{DOWNLOAD_DIR}{self.uid}"
+        self.dir = f"{DOWNLOAD_DIR}{self.uid}" if dl_dir is None else dl_dir
         self.select = select
         self.isSuperGroup = self.message.chat.type.name in ['SUPERGROUP', 'CHANNEL']
         self.suproc = None
