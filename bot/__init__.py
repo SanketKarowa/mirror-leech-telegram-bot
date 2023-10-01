@@ -11,6 +11,7 @@ from threading import Thread
 from time import sleep, time
 from subprocess import Popen, run as srun
 from os import remove as osremove, path as ospath, environ, getcwd
+from aiofiles.os import makedirs
 from aria2p import API as ariaAPI, Client as ariaClient
 from qbittorrentapi import Client as qbClient
 from faulthandler import enable as faulthandler_enable
@@ -214,6 +215,13 @@ if len(DOWNLOAD_DIR) == 0:
     DOWNLOAD_DIR = '/usr/src/app/downloads/'
 elif not DOWNLOAD_DIR.endswith("/"):
     DOWNLOAD_DIR = f'{DOWNLOAD_DIR}/'
+
+YTDL_DOWNLOAD_DIR = environ.get('YTDL_DOWNLOAD_DIR', '')
+if len(YTDL_DOWNLOAD_DIR) == 0:
+    YTDL_DOWNLOAD_DIR = '/usr/src/app/downloads/_ytdl'
+elif not YTDL_DOWNLOAD_DIR.endswith("/"):
+    YTDL_DOWNLOAD_DIR = f'{YTDL_DOWNLOAD_DIR}/'
+makedirs(name=YTDL_DOWNLOAD_DIR, exist_ok=True)
 
 AUTHORIZED_CHATS = environ.get('AUTHORIZED_CHATS', '')
 if len(AUTHORIZED_CHATS) != 0:
