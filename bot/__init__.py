@@ -22,7 +22,7 @@ from logging import (
     warning as log_warning,
     ERROR,
 )
-
+import requests
 # from faulthandler import enable as faulthandler_enable
 # faulthandler_enable()
 
@@ -46,6 +46,37 @@ basicConfig(
 LOGGER = getLogger(__name__)
 
 aria2 = ariaAPI(ariaClient(host="http://localhost", port=6800, secret=""))
+
+CONFIG_FILE_URL: str | None = environ.get('CONFIG_FILE_URL')
+if ospath.exists("/usr/src/app/config.env") is False and CONFIG_FILE_URL is not None:
+    log_info("Downloading config file")
+    try:
+        config_file = requests.get(url=CONFIG_FILE_URL, timeout=5)
+    except requests.exceptions.RequestException:
+        log_error("Failed to download config file")
+        exit(1)
+    else:
+        if config_file.ok:
+            with open('config.env', 'wt', encoding='utf-8') as f:
+                f.write(config_file.text)
+        else:
+            log_error("Failed to get config data")
+        config_file.close()
+
+TOKEN_PICKLE_FILE_URL: str | None = environ.get('TOKEN_PICKLE_FILE_URL')
+if ospath.exists("/usr/src/app/token.pickle") is False and TOKEN_PICKLE_FILE_URL is not None:
+    log_info("Downloading token.pickle file")
+    try:
+        pickle_file = requests.get(url=TOKEN_PICKLE_FILE_URL, timeout=5)
+    except requests.exceptions.RequestException:
+        log_error("Failed to download token.pickle file")
+    else:
+        if pickle_file.ok:
+            with open("/usr/src/app/token.pickle", 'wb') as f:
+                f.write(pickle_file.content)
+        else:
+            log_warning("Failed to get pickle file data")
+        pickle_file.close()
 
 load_dotenv("config.env", override=True)
 

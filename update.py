@@ -10,6 +10,7 @@ from os import path as ospath, environ, remove
 from subprocess import run as srun
 from dotenv import load_dotenv, dotenv_values
 from pymongo import MongoClient
+import requests
 
 if ospath.exists("log.txt"):
     with open("log.txt", "r+") as f:
@@ -23,6 +24,22 @@ basicConfig(
     handlers=[FileHandler("log.txt"), StreamHandler()],
     level=INFO,
 )
+
+CONFIG_FILE_URL: str | None = environ.get('CONFIG_FILE_URL')
+if ospath.exists("/usr/src/app/config.env") is False and CONFIG_FILE_URL is not None:
+    log_info("Downloading config file")
+    try:
+        config_file = requests.get(url=CONFIG_FILE_URL, timeout=5)
+    except requests.exceptions.RequestException:
+        log_error("Failed to download config file")
+        exit(1)
+    else:
+        if config_file.ok:
+            with open('config.env', 'wt', encoding='utf-8') as f:
+                f.write(config_file.text)
+        else:
+            log_error("Failed to get config data")
+        config_file.close()
 
 load_dotenv("config.env", override=True)
 
