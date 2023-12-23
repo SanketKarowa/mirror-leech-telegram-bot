@@ -1,12 +1,12 @@
 from signal import signal, SIGINT
 from aiofiles.os import path as aiopath, remove as aioremove
 from aiofiles import open as aiopen
-from os import execl as osexecl
+from os import execl as osexecl, environ
 from time import time
 from sys import executable
 from pyrogram.handlers import MessageHandler
 from pyrogram.filters import command
-from asyncio import create_subprocess_exec, gather
+from asyncio import create_subprocess_exec, gather, sleep
 from psutil import (
     disk_usage,
     cpu_percent,
@@ -35,6 +35,7 @@ from bot import (
     QbInterval,
     INCOMPLETE_TASK_NOTIFIER,
     scheduler,
+    DOWNLOAD_DIR
 )
 from .modules import (
     authorize,
@@ -55,7 +56,8 @@ from .modules import (
     bot_settings,
     help,
 )
-
+from pyngrok import ngrok, conf
+from requests import get as rget, exceptions
 
 async def stats(_, message):
     if await aiopath.exists(".git"):
@@ -138,6 +140,47 @@ async def ping(_, message):
 async def log(_, message):
     await sendFile(message, "log.txt")
 
+def get_host_ngrok_info() -> str:
+    ngrok_api_url = []
+    msg = ""
+    for host_url in environ.get('NGROK_HOST_URL', '').split():
+        ngrok_api_url.append(f"{host_url}/api/tunnels")
+    for url in ngrok_api_url:
+        LOGGER.info(f"Fetching host ngrok tunnels info: {url}")
+        try:
+            response = rget(url, headers={'Content-Type': 'application/json'})
+            if response.ok:
+                tunnels = response.json()["tunnels"]
+                for tunnel in tunnels:
+                    if "ssh" not in tunnel["name"].lower():
+                        msg += f'\n⚡ <b>{tunnel["name"]}</b>: <a href="{tunnel["public_url"]}">Click Here</a>'
+                    else:
+                        msg += f'\n⚡ <b>{tunnel["name"]}</b>: <code>{tunnel["public_url"]}</code>'
+            else:
+                LOGGER.error(f"Unable to get response from {url}")
+            response.close()
+        except exceptions.RequestException as err:
+            LOGGER.error(f"Failed to get ngrok info from {url} [{err.__class__.__name__}]")
+    return msg
+
+async def ngrok_info(client, message) -> None:
+    LOGGER.info("Getting ngrok tunnel info")
+    try:
+        if tunnels := ngrok.get_tunnels():
+            await sendMessage(message, f"🌐 <b>Bot file server</b>: <a href='{tunnels[0].public_url}'>Click Here</a>{get_host_ngrok_info()}")
+        else:
+            raise IndexError("No tunnel found")
+    except (IndexError, ngrok.PyngrokNgrokURLError, ngrok.PyngrokNgrokHTTPError):
+        LOGGER.warning(f"Failed to get ngrok tunnel, restarting")
+        try:
+            if ngrok.process.is_process_running(conf.get_default().ngrok_path) is True:
+                ngrok.kill()
+                await sleep(1)
+            file_tunnel = ngrok.connect(addr=f"file://{DOWNLOAD_DIR}", proto="http", schemes=["https"], name="files_tunnel", inspect=False)
+            await sendMessage(message, f"🌍 <b>Ngrok tunnel started\n⚡ Bot file server</b>: <a href='{file_tunnel.public_url}'>Click Here</a>{get_host_ngrok_info()}")
+        except ngrok.PyngrokError as err:
+            LOGGER.error("Failed to start ngrok tunnel")
+            await sendMessage(message, f"⁉️ <b>Failed to get tunnel info</b>\nError: <code>{str(err)}</code>")
 
 help_string = f"""
 NOTE: Try each command without any argument to see more detalis.
@@ -172,6 +215,7 @@ NOTE: Try each command without any argument to see more detalis.
 /{BotCommands.ExecCommand}: Run Commands In Exec (Only Owner).
 /{BotCommands.ClearLocalsCommand}: Clear {BotCommands.EvalCommand} or {BotCommands.ExecCommand} locals (Only Owner).
 /{BotCommands.RssCommand}: RSS Menu.
+/{BotCommands.NgrokCommand}: Show the Ngrok URL to access files.
 """
 
 
@@ -261,6 +305,11 @@ async def main():
     bot.add_handler(
         MessageHandler(
             stats, filters=command(BotCommands.StatsCommand) & CustomFilters.authorized
+        )
+    )
+    bot.add_handler(
+        MessageHandler(
+            ngrok_info, filters=command(BotCommands.NgrokCommand) & CustomFilters.authorized
         )
     )
     LOGGER.info("Bot Started!")

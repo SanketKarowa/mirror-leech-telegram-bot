@@ -22,6 +22,7 @@ from logging import (
     warning as log_warning,
     ERROR,
 )
+from pyngrok import ngrok, conf
 import requests
 # from faulthandler import enable as faulthandler_enable
 # faulthandler_enable()
@@ -522,6 +523,27 @@ else:
         if v in ["", "*"]:
             del qb_opt[k]
     qb_client.app_set_preferences(qb_opt)
+
+def start_ngrok() -> None:
+    log_info("Starting ngrok tunnel")
+    with open("/usr/src/app/ngrok.yml", "w") as config:
+        config.write(f"version: 2\nauthtoken: {NGROK_AUTH_TOKEN}\nregion: in\nconsole_ui: false\nlog_level: info")
+    ngrok_conf = conf.PyngrokConfig(
+        config_path="/usr/src/app/ngrok.yml",
+        auth_token=NGROK_AUTH_TOKEN,
+        region="in",
+        max_logs=5,
+        ngrok_version="v3",
+        monitor_thread=False)
+    try:
+        conf.set_default(ngrok_conf)
+        file_tunnel = ngrok.connect(addr=f"file://{DOWNLOAD_DIR}", proto="http", schemes=["https"], name="files_tunnel", inspect=False)
+        log_info(f"Ngrok tunnel started: {file_tunnel.public_url}")
+    except ngrok.PyngrokError as err:
+        log_error(f"Failed to start ngrok, error: {str(err)}")
+
+if (NGROK_AUTH_TOKEN := environ.get('NGROK_AUTH_TOKEN')) is not None:
+    start_ngrok()
 
 log_info("Creating client from BOT_TOKEN")
 bot = tgClient(
