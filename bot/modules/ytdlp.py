@@ -273,14 +273,15 @@ class YtDlp(TaskListener):
             sameDir = {}
         if bulk is None:
             bulk = []
-        super().__init__(message)
+        self.message = message
         self.client = client
-        self.isLeech = isLeech
-        self.isYtDlp = True
         self.multiTag = multiTag
         self.options = options
         self.sameDir = sameDir
         self.bulk = bulk
+        super().__init__()
+        self.isYtDlp = True
+        self.isLeech = isLeech
 
     @new_task
     async def newEvent(self):
@@ -368,13 +369,20 @@ class YtDlp(TaskListener):
 
         if not is_url(self.link):
             await sendMessage(
-                self.message, "Open this link for usage help!", COMMAND_USAGE["yt"]
+                self.message, COMMAND_USAGE["yt"][0], COMMAND_USAGE["yt"][1]
             )
             self.removeFromSameDir()
             return
 
         if "mdisk.me" in self.link:
             name, self.link = await _mdisk(self.link, name)
+
+        try:
+            await self.beforeStart()
+        except Exception as e:
+            await sendMessage(self.message, e)
+            self.removeFromSameDir()
+            return
 
         options = {"usenetrc": True, "cookiefile": "cookies.txt"}
         if opt:
@@ -422,13 +430,6 @@ class YtDlp(TaskListener):
             if qual is None:
                 self.removeFromSameDir()
                 return
-
-        try:
-            await self.beforeStart()
-        except Exception as e:
-            await sendMessage(self.message, e)
-            self.removeFromSameDir()
-            return
 
         LOGGER.info(f"Downloading with YT-DLP: {self.link}")
         playlist = "entries" in result
