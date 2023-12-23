@@ -35,6 +35,8 @@ getLogger("requests").setLevel(INFO)
 getLogger("urllib3").setLevel(INFO)
 getLogger("pyrogram").setLevel(ERROR)
 getLogger("httpx").setLevel(ERROR)
+getLogger("pyngrok.ngrok").setLevel(ERROR)
+getLogger("pyngrok.process").setLevel(ERROR)
 
 botStartTime = time()
 
@@ -88,6 +90,12 @@ DRIVES_NAMES = []
 DRIVES_IDS = []
 INDEX_URLS = []
 GLOBAL_EXTENSION_FILTER = ["aria2", "!qB"]
+BT_TRACKERS = []
+BT_TRACKERS_ARIA = ''
+TRACKER_URLS = [
+    "https://cf.trackerslist.com/all.txt",
+    "https://raw.githubusercontent.com/hezhijie0327/Trackerslist/main/trackerslist_tracker.txt"
+]
 user_data = {}
 aria2_options = {}
 qbit_options = {}
@@ -96,6 +104,30 @@ queued_up = {}
 non_queued_dl = set()
 non_queued_up = set()
 multi_tags = set()
+
+def get_trackers() -> None:
+    global BT_TRACKERS
+    global BT_TRACKERS_ARIA
+    log_info("Fetching trackers list")
+    BT_TRACKERS_ARIA += '['
+    for index, url in enumerate(TRACKER_URLS):
+        try:
+            track_resp = requests.get(url=url, timeout=5)
+            if track_resp.ok:
+                if index == 0:
+                    sep = '\n\n'
+                else:
+                    sep = '\n'
+                for tracker in track_resp.text.split(sep=sep):
+                    BT_TRACKERS.append(tracker.strip())
+                    BT_TRACKERS_ARIA += f"{tracker.strip()},"
+                track_resp.close()
+            else:
+                log_error(f"Failed to get data from {url}")
+        except requests.exceptions.RequestException:
+            log_error(f"Failed to send request to {url}")
+    BT_TRACKERS_ARIA += ']'
+    log_info(f"Retrieved {len(BT_TRACKERS)} trackers")
 
 try:
     if bool(environ.get("_____REMOVE_THIS_LINE_____")):
