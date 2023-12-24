@@ -119,7 +119,7 @@ async def restart(_, message):
     if Interval:
         for intvl in list(Interval.values()):
             intvl.cancel()
-    await clean_all()
+    #await clean_all()
     proc1 = await create_subprocess_exec(
         "pkill", "-9", "-f", "gunicorn|aria2c|qbittorrent-nox|ffmpeg|rclone"
     )
@@ -273,7 +273,7 @@ async def restart_notification():
 
 async def main():
     await gather(
-        clean_all(),
+        #clean_all(),
         torrent_search.initiate_search_tools(),
         restart_notification(),
     )

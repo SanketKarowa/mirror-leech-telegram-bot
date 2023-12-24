@@ -40,8 +40,8 @@ async def _onDownloadError(err, tor, button=None):
         task.listener.onDownloadError(err, button),
         sync_to_async(task.client.torrents_pause, torrent_hashes=ext_hash),
     )
-    await sleep(0.3)
-    await _remove_torrent(task.client, ext_hash, tor.tags)
+    #await sleep(0.3)
+    #await _remove_torrent(task.client, ext_hash, tor.tags)
 
 
 @new_task
@@ -53,7 +53,7 @@ async def _onSeedFinish(tor):
         return
     msg = f"Seeding stopped with Ratio: {round(tor.ratio, 3)} and Time: {get_readable_time(tor.seeding_time)}"
     await task.listener.onUploadError(msg)
-    await _remove_torrent(task.client, ext_hash, tor.tags)
+    #await _remove_torrent(task.client, ext_hash, tor.tags)
 
 
 @new_task
@@ -96,9 +96,9 @@ async def _onDownloadComplete(tor):
                 task_dict[task.listener.mid] = QbittorrentStatus(task.listener, True)
             else:
                 removed = True
-        if removed:
-            await _remove_torrent(client, ext_hash, tag)
-            return
+        #if removed:
+        #    await _remove_torrent(client, ext_hash, tag)
+        #    return
         async with qb_listener_lock:
             if tag in QbTorrents:
                 QbTorrents[tag]["seeding"] = True
@@ -107,8 +107,8 @@ async def _onDownloadComplete(tor):
         await update_status_message(task.listener.message.chat.id)
         LOGGER.info(f"Seeding started: {tor.name} - Hash: {ext_hash}")
         await sync_to_async(client.auth_log_out)
-    else:
-        await _remove_torrent(client, ext_hash, tag)
+    #else:
+    #    await _remove_torrent(client, ext_hash, tag)
 
 
 async def _qb_listener():

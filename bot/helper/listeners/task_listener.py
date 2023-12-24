@@ -1,9 +1,9 @@
 from requests import utils as rutils
-from aiofiles.os import path as aiopath, listdir, makedirs
+from aiofiles.os import path as aiopath, listdir, makedirs, rename
 from html import escape
 from aioshutil import move
 from asyncio import sleep, Event, gather
-
+from pyngrok import ngrok
 from bot import (
     Interval,
     aria2,
@@ -24,6 +24,8 @@ from bot.helper.ext_utils.files_utils import (
     clean_download,
     clean_target,
     join_files,
+    count_files_and_folders,
+    get_mime_type
 )
 from bot.helper.telegram_helper.message_utils import (
     sendMessage,
@@ -64,6 +66,16 @@ class TaskListener(TaskConfig):
         if self.sameDir and self.mid in self.sameDir["tasks"]:
             self.sameDir["tasks"].remove(self.mid)
             self.sameDir["total"] -= 1
+
+    async def get_ngrok_file_url(self) -> str:
+        ngrok_url = ''
+        try:
+            if tunnels := ngrok.get_tunnels():
+                ngrok_url += f"{tunnels[0].public_url}/{self.dir.removeprefix(DOWNLOAD_DIR)}"
+        except ngrok.PyngrokError:
+            LOGGER.warning(f"Failed to get ngrok url for: {self.dir}")
+        LOGGER.info(f"Ngrok URL: {ngrok_url}")
+        return ngrok_url
 
     async def onDownloadStart(self):
         if (
@@ -205,14 +217,22 @@ class TaskListener(TaskConfig):
             )
         elif is_gdrive_id(self.upDest):
             size = await get_path_size(up_path)
-            LOGGER.info(f"Gdrive Upload Name: {self.name}")
-            drive = gdUpload(self, up_path)
-            async with task_dict_lock:
-                task_dict[self.mid] = GdriveStatus(self, drive, size, gid, "up")
-            await gather(
-                update_status_message(self.message.chat.id),
-                sync_to_async(drive.upload, size),
-            )
+            #LOGGER.info(f"Gdrive Upload Name: {self.name}")
+            #drive = gdUpload(self, up_path)
+            #async with task_dict_lock:
+            #    task_dict[self.mid] = GdriveStatus(self, drive, size, gid, "up")
+            #await gather(
+            #    update_status_message(self.message.chat.id),
+            #    sync_to_async(drive.upload, size),
+            #)
+            new_dir = f"{DOWNLOAD_DIR}{self.name}"
+            LOGGER.info(f"Renaming {self.dir} to {new_dir}")
+            await rename(self.dir, new_dir)
+            self.dir = new_dir
+            up_path = f"{new_dir}/{self.name}"
+            folders, files = await count_files_and_folders(up_path, self.extension_filter)
+            mime_type = get_mime_type(up_path) if await aiopath.isfile(up_path) else "Folder"
+            await self.onUploadComplete(await self.get_ngrok_file_url(), size, files, folders, mime_type)
         else:
             size = await get_path_size(up_path)
             LOGGER.info(f"Rclone Upload Name: {self.name}")
@@ -320,7 +340,7 @@ class TaskListener(TaskConfig):
                 await start_from_queued()
                 return
 
-        await clean_download(self.dir)
+        #await clean_download(self.dir)
         async with task_dict_lock:
             if self.mid in task_dict:
                 del task_dict[self.mid]
@@ -369,8 +389,8 @@ class TaskListener(TaskConfig):
                 non_queued_up.remove(self.mid)
 
         await start_from_queued()
-        await sleep(3)
-        await clean_download(self.dir)
+        #await sleep(3)
+        #await clean_download(self.dir)
         if self.newDir:
             await clean_download(self.newDir)
 

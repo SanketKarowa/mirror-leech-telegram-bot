@@ -48,7 +48,7 @@ basicConfig(
 
 LOGGER = getLogger(__name__)
 
-aria2 = ariaAPI(ariaClient(host="http://localhost", port=6800, secret=""))
+aria2 = ariaAPI(ariaClient(host="http://localhost", port=6800, secret="testing123"))
 
 CONFIG_FILE_URL: str | None = environ.get('CONFIG_FILE_URL')
 if ospath.exists("/usr/src/app/config.env") is False and CONFIG_FILE_URL is not None:
