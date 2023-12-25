@@ -6,7 +6,7 @@ from asyncio import Lock
 from dotenv import load_dotenv, dotenv_values
 from time import time
 from subprocess import Popen, run as srun
-from os import remove as osremove, path as ospath, environ, getcwd
+from os import remove as osremove, path as ospath, environ, getcwd, makedirs
 from aria2p import API as ariaAPI, Client as ariaClient
 from qbittorrentapi import Client as qbClient
 from socket import setdefaulttimeout
@@ -48,6 +48,9 @@ basicConfig(
 
 LOGGER = getLogger(__name__)
 
+if ospath.exists("/usr/src/app/downloads") is False:
+    makedirs(name="/usr/src/app/downloads", exist_ok=True)
+
 aria2 = ariaAPI(ariaClient(host="http://localhost", port=6800, secret="testing123"))
 
 CONFIG_FILE_URL: str | None = environ.get('CONFIG_FILE_URL')
@@ -66,6 +69,8 @@ if ospath.exists("/usr/src/app/config.env") is False and CONFIG_FILE_URL is not 
             log_error("Failed to get config data")
         config_file.close()
 
+load_dotenv("config.env", override=True)
+
 TOKEN_PICKLE_FILE_URL: str | None = environ.get('TOKEN_PICKLE_FILE_URL')
 if ospath.exists("/usr/src/app/token.pickle") is False and TOKEN_PICKLE_FILE_URL is not None:
     log_info("Downloading token.pickle file")
@@ -80,8 +85,6 @@ if ospath.exists("/usr/src/app/token.pickle") is False and TOKEN_PICKLE_FILE_URL
         else:
             log_warning("Failed to get pickle file data")
         pickle_file.close()
-
-load_dotenv("config.env", override=True)
 
 Interval = {}
 QbInterval = []
@@ -128,6 +131,8 @@ def get_trackers() -> None:
             log_error(f"Failed to send request to {url}")
     BT_TRACKERS_ARIA += ']'
     log_info(f"Retrieved {len(BT_TRACKERS)} trackers")
+
+get_trackers()
 
 try:
     if bool(environ.get("_____REMOVE_THIS_LINE_____")):

@@ -129,8 +129,8 @@ class TaskConfig:
             token_path = self.getTokenPath(path)
             if token_path.startswith("tokens/") and status == "up":
                 self.privateLink = True
-            if not await aiopath.exists(token_path):
-                raise ValueError(f"SAccounts or token.pickle: {token_path} not Exists!")
+            #if not await aiopath.exists(token_path):
+            #    raise ValueError(f"SAccounts or token.pickle: {token_path} not Exists!")
 
     async def beforeStart(self):
         self.extension_filter = (
