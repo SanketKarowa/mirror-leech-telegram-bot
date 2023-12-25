@@ -26,7 +26,7 @@ basicConfig(
 )
 
 CONFIG_FILE_URL: str | None = environ.get('CONFIG_FILE_URL')
-if ospath.exists("/usr/src/app/config.env") is False and CONFIG_FILE_URL is not None:
+if CONFIG_FILE_URL is not None:
     log_info("Downloading config file")
     try:
         config_file = requests.get(url=CONFIG_FILE_URL, timeout=5)
