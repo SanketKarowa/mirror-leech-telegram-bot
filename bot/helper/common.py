@@ -274,10 +274,10 @@ class TaskConfig:
             )
             if not isinstance(self.upDest, int):
                 if self.upDest.startswith("b:"):
-                    self.upDest = self.upDest.lstrip("b:")
+                    self.upDest = self.upDest.replace("b:", "", 1)
                     self.userTransmission = False
                 elif self.upDest.startswith("u:"):
-                    self.upDest = self.upDest.lstrip("u:")
+                    self.upDest = self.upDest.replace("u:", "", 1)
                     self.userTransmission = IS_PREMIUM_USER
                 if self.upDest.isdigit() or self.upDest.startswith("-"):
                     self.upDest = int(self.upDest)
@@ -618,10 +618,9 @@ class TaskConfig:
                     if not checked:
                         checked = True
                         LOGGER.info(f"Creating Sample video: {self.name}")
-                    res = await createSampleVideo(
+                    return await createSampleVideo(
                         self, dl_path, sample_duration, part_duration, True
                     )
-                    return res
             else:
                 for dirpath, _, files in await sync_to_async(
                     walk, dl_path, topdown=False

@@ -100,14 +100,12 @@ class JDownloader(Myjdapi):
                 return
             try:
                 self.update_devices()
-                devices = self.list_devices()
-                if devices:
-                    for device in devices:
-                        if self._device_name == device["name"]:
-                            self.device = self.get_device(f"{self._device_name}")
-                            break
-                    else:
-                        continue
+                if not (devices := self.list_devices()):
+                    continue
+                for device in devices:
+                    if self._device_name == device["name"]:
+                        self.device = self.get_device(f"{self._device_name}")
+                        break
                 else:
                     continue
             except:
@@ -119,12 +117,17 @@ class JDownloader(Myjdapi):
     @new_task
     async def keepJdAlive(self):
         while True:
-            await aiosleep(180)
+            await aiosleep(100)
             if self.device is None:
                 break
-            try:
-                await sync_to_async(self.reconnect)
-            except:
-                pass
+            async with jd_lock:
+                try:
+                    if not await sync_to_async(self.reconnect):
+                        LOGGER.error("Failed to reconnect!")
+                        continue
+                    await sync_to_async(self.device.enable_direct_connection)
+                except:
+                    pass
+
 
 jdownloader = JDownloader()
