@@ -56,7 +56,6 @@ START = 0
 STATE = "view"
 handler_dict = {}
 default_values = {
-    "AUTO_DELETE_MESSAGE_DURATION": 30,
     "DOWNLOAD_DIR": "/usr/src/app/downloads/",
     "LEECH_SPLIT_SIZE": MAX_SPLIT_SIZE,
     "RSS_DELAY": 600,
@@ -124,9 +123,7 @@ async def get_buttons(key=None, edit_type=None):
         buttons.ibutton("Back", "botset back")
         buttons.ibutton("Close", "botset close")
         for x in range(0, len(config_dict), 10):
-            buttons.ibutton(
-                f"{int(x/10)}", f"botset start var {x}", position="footer"
-            )
+            buttons.ibutton(f"{int(x/10)}", f"botset start var {x}", position="footer")
         msg = f"Config Variables | Page: {int(START/10)} | State: {STATE}"
     elif key == "private":
         buttons.ibutton("Back", "botset back")
@@ -146,9 +143,7 @@ Timeout: 60 sec"""
         buttons.ibutton("Back", "botset back")
         buttons.ibutton("Close", "botset close")
         for x in range(0, len(aria2_options), 10):
-            buttons.ibutton(
-                f"{int(x/10)}", f"botset start aria {x}", position="footer"
-            )
+            buttons.ibutton(f"{int(x/10)}", f"botset start aria {x}", position="footer")
         msg = f"Aria2c Options | Page: {int(START/10)} | State: {STATE}"
     elif key == "qbit":
         for k in list(qbit_options.keys())[START : 10 + START]:
@@ -160,9 +155,7 @@ Timeout: 60 sec"""
         buttons.ibutton("Back", "botset back")
         buttons.ibutton("Close", "botset close")
         for x in range(0, len(qbit_options), 10):
-            buttons.ibutton(
-                f"{int(x/10)}", f"botset start qbit {x}", position="footer"
-            )
+            buttons.ibutton(f"{int(x/10)}", f"botset start qbit {x}", position="footer")
         msg = f"Qbittorrent Options | Page: {int(START/10)} | State: {STATE}"
     button = buttons.build_menu(1) if key is None else buttons.build_menu(2)
     return msg, button
@@ -182,9 +175,6 @@ async def edit_variable(_, message, pre_message, key):
         value = False
         if key == "INCOMPLETE_TASK_NOTIFIER" and DATABASE_URL:
             await DbManger().trunc_table("tasks")
-    elif key == "RSS_DELAY":
-        value = int(value)
-        addJob(value)
     elif key == "DOWNLOAD_DIR":
         if not value.endswith("/"):
             value += "/"
@@ -259,6 +249,8 @@ async def edit_variable(_, message, pre_message, key):
         await rclone_serve_booter()
     elif key in ["JD_EMAIL", "JD_PASS"]:
         jdownloader.initiate()
+    elif key == "RSS_DELAY":
+        addJob()
 
 
 async def edit_aria(_, message, pre_message, key):
@@ -780,12 +772,6 @@ async def load_config():
                 STATUS_UPDATE_INTERVAL, update_status_message, key
             )
 
-    AUTO_DELETE_MESSAGE_DURATION = environ.get("AUTO_DELETE_MESSAGE_DURATION", "")
-    if len(AUTO_DELETE_MESSAGE_DURATION) == 0:
-        AUTO_DELETE_MESSAGE_DURATION = 30
-    else:
-        AUTO_DELETE_MESSAGE_DURATION = int(AUTO_DELETE_MESSAGE_DURATION)
-
     YT_DLP_OPTIONS = environ.get("YT_DLP_OPTIONS", "")
     if len(YT_DLP_OPTIONS) == 0:
         YT_DLP_OPTIONS = ""
@@ -944,7 +930,6 @@ async def load_config():
         {
             "AS_DOCUMENT": AS_DOCUMENT,
             "AUTHORIZED_CHATS": AUTHORIZED_CHATS,
-            "AUTO_DELETE_MESSAGE_DURATION": AUTO_DELETE_MESSAGE_DURATION,
             "BASE_URL": BASE_URL,
             "BASE_URL_PORT": BASE_URL_PORT,
             "BOT_TOKEN": BOT_TOKEN,
@@ -1001,6 +986,7 @@ async def load_config():
     if DATABASE_URL:
         await DbManger().update_config(config_dict)
     await gather(initiate_search_tools(), start_from_queued(), rclone_serve_booter())
+    addJob()
 
 
 bot.add_handler(

@@ -37,7 +37,7 @@ async def mirror_status(_, message):
     if count == 0:
         currentTime = get_readable_time(time() - botStartTime)
         free = get_readable_file_size(disk_usage(DOWNLOAD_DIR).free)
-        msg = f"No Active Tasks!\nEach user can get status for his tasks by me or user_id after cmd: /{BotCommands.StatusCommand} me"
+        msg = f"No Active Tasks!\nEach user can get status for his tasks by adding me or user_id after cmd: /{BotCommands.StatusCommand} me"
         msg += (
             f"\n<b>CPU:</b> {cpu_percent()}% | <b>FREE:</b> {free}"
             f"\n<b>RAM:</b> {virtual_memory().percent}% | <b>UPTIME:</b> {currentTime}"
@@ -138,7 +138,7 @@ ODLS: {get_readable_file_size(dl_speed)}/s
 OULS: {get_readable_file_size(up_speed)}/s
 OSDS: {get_readable_file_size(seed_speed)}/s
 """
-        await query.answer(msg, show_alert=True, cache_time=30)
+        await query.answer(msg, show_alert=True)
 
 
 bot.add_handler(
