@@ -1,16 +1,7 @@
-from tzlocal import get_localzone
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from pyrogram import Client as tgClient, enums
-from pymongo import MongoClient
+from aria2p import API as ariaAPI, Client as ariaClient
 from asyncio import Lock
 from dotenv import load_dotenv, dotenv_values
-from time import time
-from subprocess import Popen, run
-from os import remove, path as ospath, environ, getcwd, makedirs
-from aria2p import API as ariaAPI, Client as ariaClient
-from qbittorrentapi import Client as qbClient
-from socket import setdefaulttimeout
-from uvloop import install
 from logging import (
     getLogger,
     FileHandler,
@@ -22,6 +13,15 @@ from logging import (
     warning as log_warning,
     ERROR,
 )
+from os import remove, path as ospath, environ, getcwd, makedirs
+from pymongo import MongoClient
+from pyrogram import Client as tgClient, enums
+from qbittorrentapi import Client as qbClient
+from socket import setdefaulttimeout
+from subprocess import Popen, run
+from time import time
+from tzlocal import get_localzone
+from uvloop import install
 from pyngrok import ngrok, conf
 import requests
 # from faulthandler import enable as faulthandler_enable
@@ -328,7 +328,7 @@ else:
 
 STATUS_UPDATE_INTERVAL = environ.get("STATUS_UPDATE_INTERVAL", "")
 if len(STATUS_UPDATE_INTERVAL) == 0:
-    STATUS_UPDATE_INTERVAL = 10
+    STATUS_UPDATE_INTERVAL = 15
 else:
     STATUS_UPDATE_INTERVAL = int(STATUS_UPDATE_INTERVAL)
 

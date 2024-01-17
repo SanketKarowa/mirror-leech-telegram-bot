@@ -1,7 +1,6 @@
-from logging import getLogger
-from time import time
-from os import path as ospath
 from googleapiclient.errors import HttpError
+from logging import getLogger
+from os import path as ospath
 from tenacity import (
     retry,
     wait_exponential,
@@ -9,6 +8,7 @@ from tenacity import (
     retry_if_exception_type,
     RetryError,
 )
+from time import time
 
 from bot.helper.ext_utils.bot_utils import async_to_sync
 from bot.helper.mirror_utils.gdrive_utils.helper import GoogleDriveHelper
@@ -32,7 +32,7 @@ class gdClone(GoogleDriveHelper):
             self.listener.upDest = self.listener.upDest.replace("mtp:", "", 1)
             self.use_sa = False
         elif self.listener.upDest.startswith("tp:"):
-            self.listener.upDest = self.listener.upDest.replave("tp:", "", 1)
+            self.listener.upDest = self.listener.upDest.replace("tp:", "", 1)
             self.use_sa = False
         elif self.listener.upDest.startswith("sa:") or self.listener.link.startswith(
             "sa:"

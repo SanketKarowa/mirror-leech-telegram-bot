@@ -1,13 +1,13 @@
 # -*- encoding: utf-8 -*-
+from Crypto.Cipher import AES
+from base64 import b64encode, b64decode
 from hashlib import sha256
 from hmac import new
 from json import dumps, loads, JSONDecodeError
-from time import time
-from urllib.parse import quote
-from base64 import b64encode, b64decode
 from requests import get, post
 from requests.exceptions import RequestException
-from Crypto.Cipher import AES
+from time import time
+from urllib.parse import quote
 
 from .exception import (
     MYJDException,
@@ -80,11 +80,10 @@ class Jd:
         self.url = "/jd"
 
     def get_core_revision(self):
-        """
-
-        :return:
-        """
         return self.device.action(f"{self.url}/getCoreRevision")
+    
+    def version(self):
+        return self.device.action(f"{self.url}/version")
 
 
 class Update:
@@ -537,6 +536,17 @@ class Linkgrabber:
         params = [dir, package_ids]
         return self.device.action(f"{self.url}/setDownloadDirectory", params)
 
+    def move_to_new_package(
+        self, name: str, path: str, link_ids: list = None, package_ids: list = None
+    ):
+        # Requires at least a link_ids or package_ids list, or both.
+        if link_ids is None:
+            link_ids = []
+        if package_ids is None:
+            package_ids = []
+        params = [link_ids, package_ids, name, path]
+        return self.device.action(f"{self.url}/movetoNewPackage", params)
+
     def remove_links(self, link_ids=None, package_ids=None):
         """
         Remove packages and/or links of the linkgrabber list.
@@ -560,10 +570,6 @@ class Linkgrabber:
         """
         params = [link_id, new_name]
         return self.device.action(f"{self.url}/renameLink", params)
-
-    def move_to_new_package(self, link_ids, package_ids, new_pkg_name, download_path):
-        params = link_ids, package_ids, new_pkg_name, download_path
-        return self.device.action(f"{self.url}/movetoNewPackage", params)
 
     def get_package_count(self):
         return self.device.action(f"{self.url}/getPackageCount")

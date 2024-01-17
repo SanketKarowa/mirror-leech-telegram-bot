@@ -1,9 +1,6 @@
-from time import time
 from aiofiles.os import remove, path as aiopath
+from time import time
 
-from bot.helper.ext_utils.bot_utils import bt_selection_buttons, sync_to_async
-from bot.helper.listeners.qbit_listener import onDownloadStart
-from bot.helper.ext_utils.task_manager import is_queued
 from bot import (
     task_dict,
     task_dict_lock,
@@ -14,6 +11,9 @@ from bot import (
     queue_dict_lock,
     BT_TRACKERS
 )
+from bot.helper.ext_utils.bot_utils import bt_selection_buttons, sync_to_async
+from bot.helper.ext_utils.task_manager import check_running_tasks
+from bot.helper.listeners.qbit_listener import onDownloadStart
 from bot.helper.mirror_utils.status_utils.qbit_status import QbittorrentStatus
 from bot.helper.telegram_helper.message_utils import (
     sendMessage,
@@ -31,13 +31,12 @@ def _get_hash_magnet(mgt: str):
     hash_ = re_search(r'(?<=xt=urn:btih:)[a-zA-Z0-9]+', mgt).group(0)
     if len(hash_) == 32:
         hash_ = b16encode(b32decode(hash_.upper())).decode()
-    return str(hash_)
+    return hash_
 
 def _get_hash_file(fpath):
     with open(fpath, "rb") as f:
         decodedDict = bdecode(f.read())
-        hash_ = sha1(bencode(decodedDict[b'info'])).hexdigest()
-    return str(hash_)
+        return sha1(bencode(decodedDict[b'info'])).hexdigest()
 """
 
 
@@ -50,7 +49,7 @@ async def add_qb_torrent(listener, path, ratio, seed_time):
         if await aiopath.exists(listener.link):
             url = None
             tpath = listener.link
-        add_to_queue, event = await is_queued(listener.mid)
+        add_to_queue, event = await check_running_tasks(listener.mid)
         op = await sync_to_async(
             client.torrents_add,
             url,

@@ -1,29 +1,16 @@
-from os import path as ospath, cpu_count
+from PIL import Image
 from aiofiles.os import remove, path as aiopath, makedirs
-from time import time
-from re import search as re_search
+from aioshutil import move
 from asyncio import create_subprocess_exec, gather, wait_for
 from asyncio.subprocess import PIPE
-from PIL import Image
-from aioshutil import move
+from os import path as ospath, cpu_count
+from re import search as re_search
+from time import time
 
 from bot import LOGGER, subprocess_lock
 from bot.helper.ext_utils.bot_utils import cmd_exec
 from bot.helper.ext_utils.bot_utils import sync_to_async
 from bot.helper.ext_utils.files_utils import ARCH_EXT, get_mime_type
-
-
-def getSplitSizeBytes(size):
-    size = size.lower()
-    if size.endswith("mb"):
-        size = size.split("mb")[0]
-        size = int(float(size) * 1048576)
-    elif size.endswith("gb"):
-        size = size.split("gb")[0]
-        size = int(float(size) * 1073741824)
-    else:
-        size = 0
-    return size
 
 
 async def createThumb(msg, _id=""):
@@ -445,7 +432,7 @@ async def createSampleVideo(
         "-c:a",
         "aac",
         "-threads",
-        f"{cpu_count()//2}",
+        f"{cpu_count() // 2}",
         output_file,
     ]
 
