@@ -51,8 +51,6 @@ LOGGER = getLogger(__name__)
 if ospath.exists("/usr/src/app/downloads") is False:
     makedirs(name="/usr/src/app/downloads", exist_ok=True)
 
-aria2 = ariaAPI(ariaClient(host="http://localhost", port=6800, secret="testing123"))
-
 CONFIG_FILE_URL: str | None = environ.get('CONFIG_FILE_URL')
 if ospath.exists("/usr/src/app/config.env") is False and CONFIG_FILE_URL is not None:
     log_info("Downloading config file")
@@ -86,7 +84,7 @@ if ospath.exists("/usr/src/app/token.pickle") is False and TOKEN_PICKLE_FILE_URL
             log_warning("Failed to get pickle file data")
         pickle_file.close()
 
-Intervals = {"status": {}, "qb": "", "jd": ""}
+Intervals = {"status": {}, "qb": "", "jd": "", "stopAll": False}
 QbTorrents = {}
 jd_downloads = {}
 DRIVES_NAMES = []
@@ -207,6 +205,14 @@ if DATABASE_URL:
         LOGGER.error(f"Database ERROR: {e}")
 else:
     config_dict = {}
+
+if not ospath.exists(".netrc"):
+    with open(".netrc", "w"):
+        pass
+run(
+    "chmod 600 .netrc && cp .netrc /root/.netrc && chmod +x aria-nox.sh && ./aria-nox.sh",
+    shell=True,
+)
 
 OWNER_ID = environ.get("OWNER_ID", "")
 if len(OWNER_ID) == 0:
@@ -505,14 +511,6 @@ if BASE_URL:
         shell=True,
     )
 
-run(["qbittorrent-nox", "-d", f"--profile={getcwd()}"])
-if not ospath.exists(".netrc"):
-    with open(".netrc", "w"):
-        pass
-run(
-    "chmod 600 .netrc && cp .netrc /root/.netrc && chmod +x aria.sh && ./aria.sh",
-    shell=True,
-)
 if ospath.exists("accounts.zip"):
     if ospath.exists("accounts"):
         run(["rm", "-rf", "accounts"])
@@ -522,8 +520,28 @@ if ospath.exists("accounts.zip"):
 if not ospath.exists("accounts"):
     config_dict["USE_SERVICE_ACCOUNTS"] = False
 
+def start_ngrok() -> None:
+    log_info("Starting ngrok tunnel")
+    with open("/usr/src/app/ngrok.yml", "w") as config:
+        config.write(f"version: 2\nauthtoken: {NGROK_AUTH_TOKEN}\nregion: in\nconsole_ui: false\nlog_level: info")
+    ngrok_conf = conf.PyngrokConfig(
+        config_path="/usr/src/app/ngrok.yml",
+        auth_token=NGROK_AUTH_TOKEN,
+        region="in",
+        max_logs=5,
+        ngrok_version="v3",
+        monitor_thread=False)
+    try:
+        conf.set_default(ngrok_conf)
+        file_tunnel = ngrok.connect(addr=f"file://{DOWNLOAD_DIR}", proto="http", schemes=["https"], name="files_tunnel", inspect=False)
+        log_info(f"Ngrok tunnel started: {file_tunnel.public_url}")
+    except ngrok.PyngrokError as err:
+        log_error(f"Failed to start ngrok, error: {str(err)}")
 
-def get_client():
+if (NGROK_AUTH_TOKEN := environ.get('NGROK_AUTH_TOKEN')) is not None:
+    start_ngrok()
+
+def get_qb_client():
     return qbClient(
         host="localhost",
         port=8090,
@@ -548,41 +566,6 @@ aria2c_global = [
     "server-stat-of",
 ]
 
-qb_client = get_client()
-if not qbit_options:
-    qbit_options = dict(qb_client.app_preferences())
-    del qbit_options["listen_port"]
-    for k in list(qbit_options.keys()):
-        if k.startswith("rss"):
-            del qbit_options[k]
-else:
-    qb_opt = {**qbit_options}
-    for k, v in list(qb_opt.items()):
-        if v in ["", "*"]:
-            del qb_opt[k]
-    qb_client.app_set_preferences(qb_opt)
-
-def start_ngrok() -> None:
-    log_info("Starting ngrok tunnel")
-    with open("/usr/src/app/ngrok.yml", "w") as config:
-        config.write(f"version: 2\nauthtoken: {NGROK_AUTH_TOKEN}\nregion: in\nconsole_ui: false\nlog_level: info")
-    ngrok_conf = conf.PyngrokConfig(
-        config_path="/usr/src/app/ngrok.yml",
-        auth_token=NGROK_AUTH_TOKEN,
-        region="in",
-        max_logs=5,
-        ngrok_version="v3",
-        monitor_thread=False)
-    try:
-        conf.set_default(ngrok_conf)
-        file_tunnel = ngrok.connect(addr=f"file://{DOWNLOAD_DIR}", proto="http", schemes=["https"], name="files_tunnel", inspect=False)
-        log_info(f"Ngrok tunnel started: {file_tunnel.public_url}")
-    except ngrok.PyngrokError as err:
-        log_error(f"Failed to start ngrok, error: {str(err)}")
-
-if (NGROK_AUTH_TOKEN := environ.get('NGROK_AUTH_TOKEN')) is not None:
-    start_ngrok()
-
 log_info("Creating client from BOT_TOKEN")
 bot = tgClient(
     "bot",
@@ -597,6 +580,20 @@ bot_loop = bot.loop
 
 scheduler = AsyncIOScheduler(timezone=str(get_localzone()), event_loop=bot_loop)
 
+if not qbit_options:
+    qbit_options = dict(get_qb_client().app_preferences())
+    del qbit_options["listen_port"]
+    for k in list(qbit_options.keys()):
+        if k.startswith("rss"):
+            del qbit_options[k]
+else:
+    qb_opt = {**qbit_options}
+    for k, v in list(qb_opt.items()):
+        if v in ["", "*"]:
+            del qb_opt[k]
+    get_qb_client().app_set_preferences(qb_opt)
+
+aria2 = ariaAPI(ariaClient(host="http://localhost", port=6800, secret="testing123"))
 if not aria2_options:
     aria2_options = aria2.client.get_global_option()
 else:

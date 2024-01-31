@@ -9,3 +9,4 @@ aria2c --allow-overwrite=true --auto-file-renaming=true --bt-enable-lpd=true --b
        --summary-interval=0 --max-upload-limit=1K --rpc-allow-origin-all=true --rpc-listen-all=true --rpc-listen-port=6800 \
        --rpc-secret=testing123 --keep-unfinished-download-result=true --save-not-found=true --save-session-interval=60 \
        --save-session=/usr/src/app/downloads/aria2c.session --dir=/usr/src/app/downloads
+qbittorrent-nox -d --profile="$(pwd)"
