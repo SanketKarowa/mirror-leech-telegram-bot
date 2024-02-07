@@ -214,10 +214,11 @@ class TaskListener(TaskConfig):
                 non_queued_dl.remove(self.mid)
             non_queued_up.add(self.mid)
 
+        self.size = await get_path_size(up_dir)
+        for s in unwanted_files_size:
+            self.size -= s
+
         if self.isLeech:
-            self.size = await get_path_size(up_dir)
-            for s in unwanted_files_size:
-                self.size -= s
             LOGGER.info(f"Leech Name: {self.name}")
             tg = TgUploader(self, up_dir)
             async with task_dict_lock:
@@ -227,9 +228,6 @@ class TaskListener(TaskConfig):
                 tg.upload(unwanted_files, files_to_delete),
             )
         elif is_gdrive_id(self.upDest):
-            self.size = await get_path_size(up_path)
-            for s in unwanted_files_size:
-                self.size -= s
             # LOGGER.info(f"Gdrive Upload Name: {self.name}")
             # drive = gdUpload(self, up_path)
             # async with task_dict_lock:
@@ -247,9 +245,6 @@ class TaskListener(TaskConfig):
             mime_type = get_mime_type(up_path) if await aiopath.isfile(up_path) else "Folder"
             await self.onUploadComplete(await self.get_ngrok_file_url(), self.size, files, folders, mime_type)
         else:
-            self.size = await get_path_size(up_path)
-            for s in unwanted_files_size:
-                self.size -= s
             LOGGER.info(f"Rclone Upload Name: {self.name}")
             RCTransfer = RcloneTransferHelper(self)
             async with task_dict_lock:
