@@ -27,7 +27,7 @@ from bot import (
     scheduler,
     DOWNLOAD_DIR
 )
-from .helper.ext_utils.bot_utils import cmd_exec, sync_to_async, create_help_buttons
+from .helper.ext_utils.bot_utils import cmd_exec, sync_to_async, create_help_buttons, get_cpu_temp
 from .helper.ext_utils.db_handler import DbManager
 from .helper.ext_utils.files_utils import clean_all, exit_clean_up
 from .helper.ext_utils.jdownloader_booter import jdownloader
@@ -90,6 +90,7 @@ async def stats(_, message):
         f"<b>Memory Total:</b> {get_readable_file_size(memory.total)}\n"
         f"<b>Memory Free:</b> {get_readable_file_size(memory.available)}\n"
         f"<b>Memory Used:</b> {get_readable_file_size(memory.used)}\n"
+        f"<b>CPU Temp:</b> {get_cpu_temp()}\n"
     )
     await sendMessage(message, stats)
 

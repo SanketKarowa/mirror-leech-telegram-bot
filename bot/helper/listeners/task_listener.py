@@ -241,7 +241,7 @@ class TaskListener(TaskConfig):
             await rename(self.dir, new_dir)
             self.dir = new_dir
             up_path = f"{new_dir}/{self.name}"
-            folders, files = await count_files_and_folders(up_path, self.extension_filter)
+            folders, files = await count_files_and_folders(up_path, self.extensionFilter)
             mime_type = get_mime_type(up_path) if await aiopath.isfile(up_path) else "Folder"
             await self.onUploadComplete(await self.get_ngrok_file_url(), self.size, files, folders, mime_type)
         else:
