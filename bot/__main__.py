@@ -90,7 +90,7 @@ async def stats(_, message):
         f"<b>Memory Total:</b> {get_readable_file_size(memory.total)}\n"
         f"<b>Memory Free:</b> {get_readable_file_size(memory.available)}\n"
         f"<b>Memory Used:</b> {get_readable_file_size(memory.used)}\n"
-        f"<b>CPU Temp:</b> {get_cpu_temp()}\n"
+        f"<b>CPU Temp:</b> {await get_cpu_temp()}\n"
     )
     await sendMessage(message, stats)
 

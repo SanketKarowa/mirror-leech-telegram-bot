@@ -215,7 +215,7 @@ async def get_cpu_temp() -> str:
     cpu_temp: Optional[str] = None
     try:
         cmd_result = await cmd_exec(["vcgencmd", "measure_temp"])
-        if cmd_result[2] is 0:
+        if cmd_result[2] == 0:
             cpu_temp = cmd_result[0].strip().split(sep="=")[1]
     except IndexError:
         pass
@@ -227,7 +227,7 @@ async def get_cpu_temp() -> str:
     if cpu_temp is None:
         try:
             cmd_result = await cmd_exec(["cat", "/sys/class/thermal/thermal_zone0/temp"])
-            if cmd_result[2] is 0:
+            if cmd_result[2] == 0:
                 cpu_temp = f"{int(cmd_result[0].strip())/100} °C"
         except (IndexError, ValueError):
             pass
