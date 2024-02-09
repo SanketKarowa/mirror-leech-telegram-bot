@@ -217,19 +217,19 @@ async def get_cpu_temp() -> str:
         cmd_result = await cmd_exec(["vcgencmd", "measure_temp"])
         if cmd_result[2] == 0:
             cpu_temp = cmd_result[0].strip().split(sep="=")[1]
-    except IndexError:
+    except (FileNotFoundError, IndexError):
         pass
     if cpu_temp is None:
         try:
-            cpu_temp = f"{psutil.sensors_temperatures()['cpu_thermal'][0].current} °C"
+            cpu_temp = f"{psutil.sensors_temperatures()['cpu_thermal'][0].current}°C"
         except (AttributeError, IndexError):
             pass
     if cpu_temp is None:
         try:
             cmd_result = await cmd_exec(["cat", "/sys/class/thermal/thermal_zone0/temp"])
             if cmd_result[2] == 0:
-                cpu_temp = f"{int(cmd_result[0].strip())/100} °C"
-        except (IndexError, ValueError):
+                cpu_temp = f"{int(cmd_result[0].strip())/100}°C"
+        except (FileNotFoundError, IndexError, ValueError):
             pass
     cpu_temp = "NA" if cpu_temp is None else cpu_temp
     return cpu_temp
