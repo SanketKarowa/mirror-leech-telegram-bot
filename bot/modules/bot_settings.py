@@ -198,10 +198,10 @@ async def edit_variable(_, message, pre_message, key):
     elif key == "STATUS_UPDATE_INTERVAL":
         value = int(value)
         if len(task_dict) != 0 and (st := Intervals["status"]):
-            for key, intvl in list(st.items()):
+            for cid, intvl in list(st.items()):
                 intvl.cancel()
-                Intervals["status"][key] = setInterval(
-                    value, update_status_message, key
+                Intervals["status"][cid] = setInterval(
+                    value, update_status_message, cid
                 )
     elif key == "TORRENT_TIMEOUT":
         value = int(value)
@@ -342,9 +342,9 @@ async def update_private_file(_, message, pre_message):
             await remove(fn)
         if fn == "accounts":
             if await aiopath.exists("accounts"):
-                await rmtree("accounts")
+                await rmtree("accounts", ignore_errors=True)
             if await aiopath.exists("rclone_sa"):
-                await rmtree("rclone_sa")
+                await rmtree("rclone_sa", ignore_errors=True)
             config_dict["USE_SERVICE_ACCOUNTS"] = False
             if DATABASE_URL:
                 await DbManager().update_config({"USE_SERVICE_ACCOUNTS": False})
@@ -358,9 +358,9 @@ async def update_private_file(_, message, pre_message):
         await message.download(file_name=f"{getcwd()}/{file_name}")
         if file_name == "accounts.zip":
             if await aiopath.exists("accounts"):
-                await rmtree("accounts")
+                await rmtree("accounts", ignore_errors=True)
             if await aiopath.exists("rclone_sa"):
-                await rmtree("rclone_sa")
+                await rmtree("rclone_sa", ignore_errors=True)
             await (
                 await create_subprocess_exec(
                     "7z", "x", "-o.", "-aoa", "accounts.zip", "accounts/*.json"
