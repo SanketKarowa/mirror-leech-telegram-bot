@@ -284,7 +284,8 @@ async def restart_notification():
 
 
 async def main():
-    jdownloader.initiate()
+    if (IS_JD_ENABLE := environ.get('IS_JD_ENABLE')) is not None and IS_JD_ENABLE.lower() == "true":
+        jdownloader.initiate()
     await gather(
         #sync_to_async(clean_all),
         torrent_search.initiate_search_tools(),
