@@ -9,6 +9,7 @@ from bot import (
     config_dict,
     non_queued_dl,
     queue_dict_lock,
+    BT_TRACKERS
 )
 from bot.helper.ext_utils.bot_utils import bt_selection_buttons, sync_to_async
 from bot.helper.ext_utils.task_manager import check_running_tasks
@@ -77,6 +78,11 @@ async def add_qb_torrent(listener, path, ratio, seed_time):
             tor_info = tor_info[0]
             listener.name = tor_info.name
             ext_hash = tor_info.hash
+            LOGGER.info(f"Adding trackers to {ext_hash}")
+            try:
+                client.torrents_add_trackers(torrent_hash=ext_hash, urls=BT_TRACKERS)
+            except Exception as e:
+                LOGGER.warning(f"Failed to add trackers to {ext_hash}: {e.__class__.__name__}")
         else:
             await listener.onDownloadError(
                 "This Torrent already added or unsupported/invalid link/file.",

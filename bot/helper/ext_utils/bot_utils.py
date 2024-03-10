@@ -17,6 +17,8 @@ from bot.helper.ext_utils.help_messages import (
 )
 from bot.helper.ext_utils.telegraph_helper import telegraph
 from bot.helper.telegram_helper.button_build import ButtonMaker
+from typing import Optional
+import psutil
 
 THREADPOOL = ThreadPoolExecutor(max_workers=1000)
 
@@ -222,3 +224,26 @@ def new_thread(func):
         return future.result() if wait else future
 
     return wrapper
+
+async def get_cpu_temp() -> str:
+    cpu_temp: Optional[str] = None
+    try:
+        cmd_result = await cmd_exec(["vcgencmd", "measure_temp"])
+        if cmd_result[2] == 0:
+            cpu_temp = cmd_result[0].strip().split(sep="=")[1]
+    except (FileNotFoundError, IndexError):
+        pass
+    if cpu_temp is None:
+        try:
+            cpu_temp = f"{psutil.sensors_temperatures()['cpu_thermal'][0].current}°C"
+        except (AttributeError, IndexError):
+            pass
+    if cpu_temp is None:
+        try:
+            cmd_result = await cmd_exec(["cat", "/sys/class/thermal/thermal_zone0/temp"])
+            if cmd_result[2] == 0:
+                cpu_temp = f"{int(cmd_result[0].strip())/100}°C"
+        except (FileNotFoundError, IndexError, ValueError):
+            pass
+    cpu_temp = "NA" if cpu_temp is None else cpu_temp
+    return cpu_temp

@@ -13,7 +13,7 @@ from logging import (
     warning as log_warning,
     ERROR,
 )
-from os import remove, path as ospath, environ
+from os import remove, path as ospath, environ, makedirs
 from pymongo import MongoClient
 from pyrogram import Client as tgClient, enums
 from qbittorrentapi import Client as qbClient
@@ -22,6 +22,8 @@ from subprocess import Popen, run
 from time import time
 from tzlocal import get_localzone
 from uvloop import install
+from pyngrok import ngrok, conf
+import requests
 
 # from faulthandler import enable as faulthandler_enable
 # faulthandler_enable()
@@ -34,6 +36,8 @@ getLogger("requests").setLevel(INFO)
 getLogger("urllib3").setLevel(INFO)
 getLogger("pyrogram").setLevel(ERROR)
 getLogger("httpx").setLevel(ERROR)
+getLogger("pyngrok.ngrok").setLevel(ERROR)
+getLogger("pyngrok.process").setLevel(ERROR)
 
 botStartTime = time()
 
@@ -45,7 +49,41 @@ basicConfig(
 
 LOGGER = getLogger(__name__)
 
+if ospath.exists("/usr/src/app/downloads") is False:
+    makedirs(name="/usr/src/app/downloads", exist_ok=True)
+
+CONFIG_FILE_URL: str | None = environ.get('CONFIG_FILE_URL')
+if ospath.exists("/usr/src/app/config.env") is False and CONFIG_FILE_URL is not None:
+    log_info("Downloading config file")
+    try:
+        config_file = requests.get(url=CONFIG_FILE_URL, timeout=5)
+    except requests.exceptions.RequestException:
+        log_error("Failed to download config file")
+        exit(1)
+    else:
+        if config_file.ok:
+            with open('config.env', 'wt', encoding='utf-8') as f:
+                f.write(config_file.text)
+        else:
+            log_error("Failed to get config data")
+        config_file.close()
+
 load_dotenv("config.env", override=True)
+
+TOKEN_PICKLE_FILE_URL: str | None = environ.get('TOKEN_PICKLE_FILE_URL')
+if ospath.exists("/usr/src/app/token.pickle") is False and TOKEN_PICKLE_FILE_URL is not None:
+    log_info("Downloading token.pickle file")
+    try:
+        pickle_file = requests.get(url=TOKEN_PICKLE_FILE_URL, timeout=5)
+    except requests.exceptions.RequestException:
+        log_error("Failed to download token.pickle file")
+    else:
+        if pickle_file.ok:
+            with open("/usr/src/app/token.pickle", 'wb') as f:
+                f.write(pickle_file.content)
+        else:
+            log_warning("Failed to get pickle file data")
+        pickle_file.close()
 
 Intervals = {"status": {}, "qb": "", "jd": "", "stopAll": False}
 QbTorrents = {}
@@ -54,6 +92,12 @@ DRIVES_NAMES = []
 DRIVES_IDS = []
 INDEX_URLS = []
 GLOBAL_EXTENSION_FILTER = ["aria2", "!qB"]
+BT_TRACKERS = []
+BT_TRACKERS_ARIA = ''
+TRACKER_URLS = [
+    "https://cf.trackerslist.com/all.txt",
+    "https://raw.githubusercontent.com/hezhijie0327/Trackerslist/main/trackerslist_tracker.txt"
+]
 user_data = {}
 aria2_options = {}
 qbit_options = {}
@@ -62,6 +106,32 @@ queued_up = {}
 non_queued_dl = set()
 non_queued_up = set()
 multi_tags = set()
+
+def get_trackers() -> None:
+    global BT_TRACKERS
+    global BT_TRACKERS_ARIA
+    log_info("Fetching trackers list")
+    BT_TRACKERS_ARIA += '['
+    for index, url in enumerate(TRACKER_URLS):
+        try:
+            track_resp = requests.get(url=url, timeout=5)
+            if track_resp.ok:
+                if index == 0:
+                    sep = '\n\n'
+                else:
+                    sep = '\n'
+                for tracker in track_resp.text.split(sep=sep):
+                    BT_TRACKERS.append(tracker.strip())
+                    BT_TRACKERS_ARIA += f"{tracker.strip()},"
+                track_resp.close()
+            else:
+                log_error(f"Failed to get data from {url}")
+        except requests.exceptions.RequestException:
+            log_error(f"Failed to send request to {url}")
+    BT_TRACKERS_ARIA += ']'
+    log_info(f"Retrieved {len(BT_TRACKERS)} trackers")
+
+get_trackers()
 
 try:
     if bool(environ.get("_____REMOVE_THIS_LINE_____")):
@@ -451,6 +521,27 @@ if ospath.exists("accounts.zip"):
 if not ospath.exists("accounts"):
     config_dict["USE_SERVICE_ACCOUNTS"] = False
 
+def start_ngrok() -> None:
+    log_info("Starting ngrok tunnel")
+    with open("/usr/src/app/ngrok.yml", "w") as config:
+        config.write(f"version: 2\nauthtoken: {NGROK_AUTH_TOKEN}\nregion: in\nconsole_ui: false\nlog_level: info")
+    ngrok_conf = conf.PyngrokConfig(
+        config_path="/usr/src/app/ngrok.yml",
+        auth_token=NGROK_AUTH_TOKEN,
+        region="in",
+        max_logs=5,
+        ngrok_version="v3",
+        monitor_thread=False)
+    try:
+        conf.set_default(ngrok_conf)
+        file_tunnel = ngrok.connect(addr=f"file://{DOWNLOAD_DIR}", proto="http", schemes=["https"], name="files_tunnel", inspect=False)
+        log_info(f"Ngrok tunnel started: {file_tunnel.public_url}")
+    except ngrok.PyngrokError as err:
+        log_error(f"Failed to start ngrok, error: {str(err)}")
+
+if (NGROK_AUTH_TOKEN := environ.get('NGROK_AUTH_TOKEN')) is not None:
+    start_ngrok()
+
 
 def get_qb_client():
     return qbClient(
@@ -505,7 +596,7 @@ else:
             del qb_opt[k]
     get_qb_client().app_set_preferences(qb_opt)
 
-aria2 = ariaAPI(ariaClient(host="http://localhost", port=6800, secret=""))
+aria2 = ariaAPI(ariaClient(host="http://localhost", port=6800, secret="testing123"))
 if not aria2_options:
     aria2_options = aria2.client.get_global_option()
 else:

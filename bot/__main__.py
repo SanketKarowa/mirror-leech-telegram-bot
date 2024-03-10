@@ -1,7 +1,7 @@
 from aiofiles import open as aiopen
 from aiofiles.os import path as aiopath, remove
 from asyncio import gather, create_subprocess_exec, sleep
-from os import execl as osexecl
+from os import execl as osexecl, environ
 from psutil import (
     disk_usage,
     cpu_percent,
@@ -25,8 +25,9 @@ from bot import (
     DATABASE_URL,
     INCOMPLETE_TASK_NOTIFIER,
     scheduler,
+    DOWNLOAD_DIR
 )
-from .helper.ext_utils.bot_utils import cmd_exec, sync_to_async, create_help_buttons
+from .helper.ext_utils.bot_utils import cmd_exec, sync_to_async, create_help_buttons, get_cpu_temp
 from .helper.ext_utils.db_handler import DbManager
 from .helper.ext_utils.files_utils import clean_all, exit_clean_up
 from .helper.ext_utils.jdownloader_booter import jdownloader
@@ -58,7 +59,8 @@ from .modules import (
     help,
     force_start,
 )
-
+from pyngrok import ngrok, conf
+from requests import get as rget, exceptions
 
 async def stats(_, message):
     if await aiopath.exists(".git"):
@@ -88,6 +90,7 @@ async def stats(_, message):
         f"<b>Memory Total:</b> {get_readable_file_size(memory.total)}\n"
         f"<b>Memory Free:</b> {get_readable_file_size(memory.available)}\n"
         f"<b>Memory Used:</b> {get_readable_file_size(memory.used)}\n"
+        f"<b>CPU Temp:</b> {await get_cpu_temp()}\n"
     )
     await sendMessage(message, stats)
 
@@ -123,8 +126,8 @@ async def restart(_, message):
     if st := Intervals["status"]:
         for intvl in list(st.values()):
             intvl.cancel()
-    await sleep(1)
-    await sync_to_async(clean_all)
+    #await sleep(1)
+    #await sync_to_async(clean_all)
     await sleep(1)
     proc1 = await create_subprocess_exec(
         "pkill", "-9", "-f", "gunicorn|aria2c|qbittorrent-nox|ffmpeg|rclone|java"
@@ -146,6 +149,47 @@ async def ping(_, message):
 async def log(_, message):
     await sendFile(message, "log.txt")
 
+def get_host_ngrok_info() -> str:
+    ngrok_api_url = []
+    msg = ""
+    for host_url in environ.get('NGROK_HOST_URL', '').split():
+        ngrok_api_url.append(f"{host_url}/api/tunnels")
+    for url in ngrok_api_url:
+        LOGGER.info(f"Fetching host ngrok tunnels info: {url}")
+        try:
+            response = rget(url, headers={'Content-Type': 'application/json'})
+            if response.ok:
+                tunnels = response.json()["tunnels"]
+                for tunnel in tunnels:
+                    if "ssh" not in tunnel["name"].lower():
+                        msg += f'\n⚡ <b>{tunnel["name"]}</b>: <a href="{tunnel["public_url"]}">Click Here</a>'
+                    else:
+                        msg += f'\n⚡ <b>{tunnel["name"]}</b>: <code>{tunnel["public_url"]}</code>'
+            else:
+                LOGGER.error(f"Unable to get response from {url}")
+            response.close()
+        except exceptions.RequestException as err:
+            LOGGER.error(f"Failed to get ngrok info from {url} [{err.__class__.__name__}]")
+    return msg
+
+async def ngrok_info(client, message) -> None:
+    LOGGER.info("Getting ngrok tunnel info")
+    try:
+        if tunnels := ngrok.get_tunnels():
+            await sendMessage(message, f"🌐 <b>Bot file server</b>: <a href='{tunnels[0].public_url}'>Click Here</a>{get_host_ngrok_info()}")
+        else:
+            raise IndexError("No tunnel found")
+    except (IndexError, ngrok.PyngrokNgrokURLError, ngrok.PyngrokNgrokHTTPError):
+        LOGGER.warning(f"Failed to get ngrok tunnel, restarting")
+        try:
+            if ngrok.process.is_process_running(conf.get_default().ngrok_path) is True:
+                ngrok.kill()
+                await sleep(1)
+            file_tunnel = ngrok.connect(addr=f"file://{DOWNLOAD_DIR}", proto="http", schemes=["https"], name="files_tunnel", inspect=False)
+            await sendMessage(message, f"🌍 <b>Ngrok tunnel started\n⚡ Bot file server</b>: <a href='{file_tunnel.public_url}'>Click Here</a>{get_host_ngrok_info()}")
+        except ngrok.PyngrokError as err:
+            LOGGER.error("Failed to start ngrok tunnel")
+            await sendMessage(message, f"⁉️ <b>Failed to get tunnel info</b>\nError: <code>{str(err)}</code>")
 
 help_string = f"""
 NOTE: Try each command without any argument to see more detalis.
@@ -183,6 +227,7 @@ NOTE: Try each command without any argument to see more detalis.
 /{BotCommands.ExecCommand}: Exec sync functions (Only Owner).
 /{BotCommands.ClearLocalsCommand}: Clear {BotCommands.AExecCommand} or {BotCommands.ExecCommand} locals (Only Owner).
 /{BotCommands.RssCommand}: RSS Menu.
+/{BotCommands.NgrokCommand}: Show the Ngrok URL to access files.
 """
 
 
@@ -239,9 +284,10 @@ async def restart_notification():
 
 
 async def main():
-    jdownloader.initiate()
+    if (IS_JD_ENABLE := environ.get('IS_JD_ENABLE')) is not None and IS_JD_ENABLE.lower() == "true":
+        jdownloader.initiate()
     await gather(
-        sync_to_async(clean_all),
+        #sync_to_async(clean_all),
         torrent_search.initiate_search_tools(),
         restart_notification(),
         telegraph.create_account(),
@@ -275,6 +321,11 @@ async def main():
     bot.add_handler(
         MessageHandler(
             stats, filters=command(BotCommands.StatsCommand) & CustomFilters.authorized
+        )
+    )
+    bot.add_handler(
+        MessageHandler(
+            ngrok_info, filters=command(BotCommands.NgrokCommand) & CustomFilters.authorized
         )
     )
     LOGGER.info("Bot Started!")

@@ -13,7 +13,7 @@ from bot import (
     Intervals,
     bot,
 )
-from bot.helper.ext_utils.bot_utils import new_task
+from bot.helper.ext_utils.bot_utils import new_task, get_cpu_temp
 from bot.helper.ext_utils.status_utils import (
     MirrorStatus,
     get_readable_file_size,
@@ -40,7 +40,7 @@ async def mirror_status(_, message):
         free = get_readable_file_size(disk_usage(DOWNLOAD_DIR).free)
         msg = f"No Active Tasks!\nEach user can get status for his tasks by adding me or user_id after cmd: /{BotCommands.StatusCommand} me"
         msg += (
-            f"\n<b>CPU:</b> {cpu_percent()}% | <b>FREE:</b> {free}"
+            f"\n<b>CPU:</b> {cpu_percent()}% | <b>TEMP:</b> {await get_cpu_temp()} | <b>FREE:</b> {free}"
             f"\n<b>RAM:</b> {virtual_memory().percent}% | <b>UPTIME:</b> {currentTime}"
         )
         reply_message = await sendMessage(message, msg)

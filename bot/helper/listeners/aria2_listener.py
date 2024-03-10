@@ -82,14 +82,14 @@ async def _onDownloadComplete(api, gid):
                 await task.listener.onUploadError(
                     f"Seeding stopped with Ratio: {task.ratio()} and Time: {task.seeding_time()}"
                 )
-                await sync_to_async(api.remove, [download], force=True, files=True)
+                #await sync_to_async(api.remove, [download], force=True, files=True)
     else:
         LOGGER.info(f"onDownloadComplete: {download.name} - Gid: {gid}")
         if task := await getTaskByGid(gid):
             await task.listener.onDownloadComplete()
             if Intervals["stopAll"]:
                 return
-            await sync_to_async(api.remove, [download], force=True, files=True)
+            #await sync_to_async(api.remove, [download], force=True, files=True)
 
 
 @new_thread
@@ -135,22 +135,22 @@ async def _onBtDownloadComplete(api, gid):
                     await task.listener.onUploadError(
                         f"Seeding stopped with Ratio: {task.ratio()} and Time: {task.seeding_time()}"
                     )
-                    await sync_to_async(api.remove, [download], force=True, files=True)
+                    #await sync_to_async(api.remove, [download], force=True, files=True)
             elif not task.listener.isCancelled:
                 async with task_dict_lock:
                     if task.listener.mid not in task_dict:
-                        await sync_to_async(
-                            api.remove, [download], force=True, files=True
-                        )
+                        #await sync_to_async(
+                        #    api.remove, [download], force=True, files=True
+                        #)
                         return
                     task_dict[task.listener.mid] = Aria2Status(task.listener, gid, True)
                     task_dict[task.listener.mid].start_time = seed_start_time
                 LOGGER.info(f"Seeding started: {download.name} - Gid: {gid}")
                 await update_status_message(task.listener.message.chat.id)
-            else:
-                await sync_to_async(api.remove, [download], force=True, files=True)
-        else:
-            await sync_to_async(api.remove, [download], force=True, files=True)
+            #else:
+            #    await sync_to_async(api.remove, [download], force=True, files=True)
+        #else:
+        #    await sync_to_async(api.remove, [download], force=True, files=True)
 
 
 @new_thread
