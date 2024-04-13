@@ -101,6 +101,7 @@ async def add_jd_download(listener, path):
             if not is_connected:
                 await listener.onDownloadError(jdownloader.error)
                 return
+            jdownloader.boot()
             await jdownloader.connectToDevice()
 
         if not jd_downloads:
@@ -117,7 +118,7 @@ async def add_jd_download(listener, path):
             jdownloader.device.linkgrabber.query_packages, [{}]
         ):
             odl_list = [
-                od["uuid"] for od in odl if od["saveTo"].startswith("/root/Downloads/")
+                od["uuid"] for od in odl if od.get("saveTo", "").startswith("/root/Downloads/")
             ]
             if odl_list:
                 await retry_function(
@@ -292,7 +293,7 @@ async def add_jd_download(listener, path):
         package_ids=online_packages,
     )
 
-    await sleep(0.5)
+    await sleep(1)
 
     download_packages = await retry_function(
         jdownloader.device.downloads.query_packages,
