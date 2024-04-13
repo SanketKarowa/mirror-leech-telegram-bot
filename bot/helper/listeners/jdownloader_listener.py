@@ -1,5 +1,5 @@
 from asyncio import sleep, wait_for
-
+from os import environ
 from bot import Intervals, jd_lock, jd_downloads, LOGGER
 from bot.helper.ext_utils.bot_utils import new_task, retry_function
 from bot.helper.ext_utils.jdownloader_booter import jdownloader
@@ -76,8 +76,9 @@ async def _jd_listener():
                 if not is_connected:
                     LOGGER.error(jdownloader.error)
                     continue
-                jdownloader.boot()
-                await jdownloader.connectToDevice()
+                if (IS_JD_ENABLE := environ.get('IS_JD_ENABLE')) is not None and IS_JD_ENABLE.lower() == "true":
+                    jdownloader.boot()
+                    await jdownloader.connectToDevice()
             try:
                 packages = await jdownloader.device.downloads.query_packages(
                     [{"finished": True}]
