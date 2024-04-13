@@ -6,7 +6,7 @@ from time import time
 from aiofiles.os import path as aiopath
 from aiofiles import open as aiopen
 from base64 import b64encode
-
+from os import environ
 from bot import (
     task_dict,
     task_dict_lock,
@@ -101,8 +101,9 @@ async def add_jd_download(listener, path):
             if not is_connected:
                 await listener.onDownloadError(jdownloader.error)
                 return
-            jdownloader.boot()
-            await jdownloader.connectToDevice()
+            if (IS_JD_ENABLE := environ.get('IS_JD_ENABLE')) is not None and IS_JD_ENABLE.lower() == "true":
+                jdownloader.boot()
+                await jdownloader.connectToDevice()
 
         if not jd_downloads:
             await retry_function(jdownloader.device.linkgrabber.clear_list)
