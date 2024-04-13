@@ -604,7 +604,7 @@ else:
             del qb_opt[k]
     get_qb_client().app_set_preferences(qb_opt)
 
-aria2 = ariaAPI(ariaClient(host="http://localhost", port=6800, secret="testing123"))
+aria2 = ariaAPI(ariaClient(host=environ.get('ARIA_HOST', "http://localhost"), port=int(environ.get('ARIA_PORT', 6800)), secret=environ.get('ARIA_SECRET', "testing123")))
 if not aria2_options:
     aria2_options = aria2.client.get_global_option()
 else:

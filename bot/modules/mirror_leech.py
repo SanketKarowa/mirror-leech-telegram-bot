@@ -3,7 +3,7 @@ from base64 import b64encode
 from pyrogram.filters import command
 from pyrogram.handlers import MessageHandler
 from re import match as re_match
-
+from os import environ
 from bot import bot, DOWNLOAD_DIR, LOGGER
 from bot.helper.ext_utils.bot_utils import (
     get_content_type,
@@ -310,7 +310,8 @@ class Mirror(TaskListener):
             await add_direct_download(self, path)
         elif self.isJd:
             try:
-                await add_jd_download(self, path)
+                if (IS_JD_ENABLE := environ.get('IS_JD_ENABLE')) is not None and IS_JD_ENABLE.lower() == "true":
+                    await add_jd_download(self, path)
             except (Exception, MYJDException) as e:
                 await sendMessage(self.message, f"{e}".strip())
                 self.removeFromSameDir()

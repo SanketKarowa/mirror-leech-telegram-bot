@@ -262,7 +262,8 @@ async def edit_variable(_, message, pre_message, key):
     ]:
         await rclone_serve_booter()
     elif key in ["JD_EMAIL", "JD_PASS"]:
-        jdownloader.initiate()
+        if (IS_JD_ENABLE := environ.get('IS_JD_ENABLE')) is not None and IS_JD_ENABLE.lower() == "true":
+            jdownloader.initiate()
     elif key == "RSS_DELAY":
         addJob()
 
