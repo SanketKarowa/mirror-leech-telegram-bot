@@ -78,7 +78,9 @@ async def _jd_listener():
                     continue
                 if (IS_JD_ENABLE := environ.get('IS_JD_ENABLE')) is not None and IS_JD_ENABLE.lower() == "true":
                     jdownloader.boot()
-                    await jdownloader.connectToDevice()
+                    isDeviceConnected = await jdownloader.connectToDevice()
+                    if not isDeviceConnected:
+                        continue
             try:
                 packages = await jdownloader.device.downloads.query_packages(
                     [{"finished": True}]

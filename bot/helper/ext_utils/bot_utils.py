@@ -107,7 +107,7 @@ def arg_parser(items, arg_base):
         "-fd",
         "-fu",
         "-sync",
-        "-ml"
+        "-ml",
     }
     t = len(items)
     i = 0
