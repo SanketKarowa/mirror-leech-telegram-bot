@@ -11,3 +11,4 @@ aria2c --allow-overwrite=true --auto-file-renaming=true --bt-enable-lpd=true --b
        --save-session=/usr/src/app/downloads/aria2c.session --input-file=/usr/src/app/downloads/aria2c.session \
        --dir=/usr/src/app/downloads
 qbittorrent-nox -d --profile="$(pwd)"
+sabnzbdplus -f sabnzbd/SABnzbd.ini -s :::8070 -b 0 -d -c -l 0 --console
