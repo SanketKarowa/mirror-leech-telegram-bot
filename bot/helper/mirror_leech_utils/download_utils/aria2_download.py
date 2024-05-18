@@ -1,5 +1,5 @@
 from aiofiles.os import remove, path as aiopath
-
+from os import getenv
 from bot import (
     aria2,
     task_dict_lock,
@@ -21,7 +21,7 @@ from bot.helper.telegram_helper.message_utils import sendStatusMessage, sendMess
 async def add_aria2c_download(listener, dpath, header, ratio, seed_time):
     a2c_opt = {**aria2_options}
     [a2c_opt.pop(k) for k in aria2c_global if k in aria2_options]
-    a2c_opt["dir"] = dpath
+    a2c_opt["dir"] = dpath if getenv(key="ARIA_DOWNLOAD_PATH") is None else getenv(key="ARIA_DOWNLOAD_PATH")
     if listener.name:
         a2c_opt["out"] = listener.name
     if header:
