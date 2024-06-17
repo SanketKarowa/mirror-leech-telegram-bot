@@ -36,10 +36,11 @@ async def _onDownloadError(err, tor, button=None):
     LOGGER.info(f"Cancelling Download: {tor.name}")
     ext_hash = tor.hash
     task = await getTaskByGid(ext_hash[:12])
-    await gather(
-        task.listener.onDownloadError(err, button),
-        sync_to_async(qbittorrent_client.torrents_pause, torrent_hashes=ext_hash),
-    )
+    if task is not None:
+        await gather(
+            task.listener.onDownloadError(err, button),
+            sync_to_async(qbittorrent_client.torrents_pause, torrent_hashes=ext_hash),
+        )
     #await sleep(0.3)
     #await _remove_torrent(ext_hash, tor.tags)
 
