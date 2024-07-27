@@ -144,7 +144,7 @@ try:
     if bool(environ.get("_____REMOVE_THIS_LINE_____")):
         log_error("The README.md file there to be read! Exiting now!")
         exit(1)
-except Exception:
+except:
     pass
 
 task_dict_lock = Lock()
@@ -263,7 +263,7 @@ if len(USER_SESSION_STRING) != 0:
             max_concurrent_transmissions=10,
         ).start()
         IS_PREMIUM_USER = user.me.is_premium
-    except Exception:
+    except:
         log_error("Failed to start client from USER_SESSION_STRING")
         IS_PREMIUM_USER = False
         user = ""
@@ -326,7 +326,7 @@ try:
         USENET_SERVERS = []
     else:
         USENET_SERVERS = eval(USENET_SERVERS)
-except Exception:
+except:
     log_error(f"Wrong USENET_SERVERS format: {USENET_SERVERS}")
     USENET_SERVERS = []
 
@@ -356,7 +356,7 @@ if len(SEARCH_PLUGINS) == 0:
 else:
     try:
         SEARCH_PLUGINS = eval(SEARCH_PLUGINS)
-    except Exception:
+    except:
         log_error(f"Wrong USENET_SERVERS format: {SEARCH_PLUGINS}")
         SEARCH_PLUGINS = ""
 
