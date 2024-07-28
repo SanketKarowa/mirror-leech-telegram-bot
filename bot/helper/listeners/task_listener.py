@@ -238,13 +238,6 @@ class TaskListener(TaskConfig):
             )
         elif is_gdrive_id(self.upDest):
             LOGGER.info(f"Gdrive Upload Name: {self.name}")
-            # drive = gdUpload(self, up_path)
-            # async with task_dict_lock:
-            #     task_dict[self.mid] = GdriveStatus(self, drive, gid, "up")
-            # await gather(
-            #     update_status_message(self.message.chat.id),
-            #     sync_to_async(drive.upload, unwanted_files, files_to_delete),
-            # )
             new_dir = f"{DOWNLOAD_DIR}{self.name}"
             LOGGER.info(f"Renaming {self.dir} to {new_dir}")
             await rename(self.dir, new_dir)
@@ -252,6 +245,15 @@ class TaskListener(TaskConfig):
             up_path = f"{new_dir}/{self.name}"
             folders, files = await count_files_and_folders(up_path, self.extensionFilter)
             mime_type = get_mime_type(up_path) if await aiopath.isfile(up_path) else "Folder"
+            if self.isYtDlp is True:
+                ytdl_path = f"{DOWNLOAD_DIR}/ytdl"
+                if "audio" in mime_type:
+                    ytdl_path = f"{ytdl_path}/audio"
+                else:
+                    ytdl_path = f"{ytdl_path}/video"
+                LOGGER.info(f"Moving {self.dir} to {ytdl_path}")
+                await move(self.dir, ytdl_path)
+                self.dir = f"{ytdl_path}/{self.name}"
             await self.onUploadComplete(await self.get_ngrok_file_url(), files, folders, mime_type)
         else:
             LOGGER.info(f"Rclone Upload Name: {self.name}")

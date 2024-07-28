@@ -55,6 +55,8 @@ LOGGER = getLogger(__name__)
 
 if ospath.exists("/usr/src/app/downloads") is False:
     makedirs(name="/usr/src/app/downloads", exist_ok=True)
+    makedirs(name="/usr/src/app/downloads/ytdl/audio", exist_ok=True)
+    makedirs(name="/usr/src/app/downloads/ytdl/video", exist_ok=True)
 
 CONFIG_FILE_URL: str | None = environ.get('CONFIG_FILE_URL')
 if ospath.exists("/usr/src/app/config.env") is False and CONFIG_FILE_URL is not None:
