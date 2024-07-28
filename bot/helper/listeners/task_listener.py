@@ -246,7 +246,7 @@ class TaskListener(TaskConfig):
             folders, files = await count_files_and_folders(up_path, self.extensionFilter)
             mime_type = get_mime_type(up_path) if await aiopath.isfile(up_path) else "Folder"
             if self.isYtDlp is True:
-                ytdl_path = f"{DOWNLOAD_DIR}/ytdl"
+                ytdl_path = f"{DOWNLOAD_DIR}ytdl"
                 if "audio" in mime_type:
                     ytdl_path = f"{ytdl_path}/audio"
                 else:
