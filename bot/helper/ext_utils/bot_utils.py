@@ -6,7 +6,6 @@ from asyncio import (
     sleep,
 )
 from asyncio.subprocess import PIPE
-from concurrent.futures import ThreadPoolExecutor
 from functools import partial, wraps
 
 from bot import user_data, config_dict, bot_loop
@@ -19,8 +18,6 @@ from bot.helper.ext_utils.telegraph_helper import telegraph
 from bot.helper.telegram_helper.button_build import ButtonMaker
 from typing import Optional
 import psutil
-
-THREADPOOL = ThreadPoolExecutor(max_workers=1000)
 
 COMMAND_USAGE = {}
 
@@ -208,7 +205,7 @@ def new_task(func):
 
 async def sync_to_async(func, *args, wait=True, **kwargs):
     pfunc = partial(func, *args, **kwargs)
-    future = bot_loop.run_in_executor(THREADPOOL, pfunc)
+    future = bot_loop.run_in_executor(None, pfunc)
     return await future if wait else future
 
 

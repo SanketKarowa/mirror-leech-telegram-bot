@@ -1,3 +1,4 @@
+from sys import exit
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from aria2p import API as ariaAPI, Client as ariaClient
 from asyncio import Lock, get_event_loop
@@ -24,6 +25,7 @@ from subprocess import Popen, run
 from time import time
 from tzlocal import get_localzone
 from uvloop import install
+from concurrent.futures import ThreadPoolExecutor
 from pyngrok import ngrok, conf
 import requests
 
@@ -44,6 +46,8 @@ getLogger("pyngrok.process").setLevel(ERROR)
 
 botStartTime = time()
 bot_loop = get_event_loop()
+THREADPOOL = ThreadPoolExecutor(max_workers=99999)
+bot_loop.set_default_executor(THREADPOOL)
 
 basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -633,7 +637,7 @@ bot = tgClient(
     TELEGRAM_API,
     TELEGRAM_HASH,
     bot_token=BOT_TOKEN,
-    workers=1000,
+    workers=99999,
     parse_mode=enums.ParseMode.HTML,
     max_concurrent_transmissions=10,
 ).start()
@@ -650,7 +654,9 @@ def get_qb_options():
         for k in list(qbit_options.keys()):
             if k.startswith("rss"):
                 del qbit_options[k]
+        qbittorrent_client.app_set_preferences({"web_ui_password": "mltbmltb"})
     else:
+        qbit_options["web_ui_password"] = "mltbmltb"
         qb_opt = {**qbit_options}
         qbittorrent_client.app_set_preferences(qb_opt)
 
