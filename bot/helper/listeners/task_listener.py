@@ -237,6 +237,7 @@ class TaskListener(TaskConfig):
                 tg.upload(unwanted_files, files_to_delete),
             )
         elif is_gdrive_id(self.upDest):
+            error_msg = ""
             LOGGER.info(f"Gdrive Upload Name: {self.name}")
             new_dir = f"{DOWNLOAD_DIR}{self.name}"
             LOGGER.info(f"Renaming {self.dir} to {new_dir}")
@@ -252,9 +253,13 @@ class TaskListener(TaskConfig):
                 else:
                     ytdl_path = f"{ytdl_path}/video"
                 LOGGER.info(f"Moving {self.dir} to {ytdl_path}")
-                await move(self.dir, ytdl_path)
-                self.dir = f"{ytdl_path}/{self.name}"
-            await self.onUploadComplete(await self.get_ngrok_file_url(), files, folders, mime_type)
+                try:
+                    await move(self.dir, ytdl_path)
+                    self.dir = f"{ytdl_path}/{self.name}"
+                except Exception as e:
+                    error_msg = f"Unable to move {self.name} to {ytdl_path} | error:: {e.__class__.__name__}"
+                    LOGGER.error(error_msg)
+            await self.onUploadComplete(await self.get_ngrok_file_url(), files, folders, mime_type, error_msg)
         else:
             LOGGER.info(f"Rclone Upload Name: {self.name}")
             RCTransfer = RcloneTransferHelper(self)
@@ -266,7 +271,7 @@ class TaskListener(TaskConfig):
             )
 
     async def onUploadComplete(
-        self, link, files, folders, mime_type, rclonePath="", dir_id=""
+        self, link, files, folders, mime_type, rclonePath="", dir_id="", error_msg=""
     ):
         if (
             self.isSuperChat
@@ -275,6 +280,8 @@ class TaskListener(TaskConfig):
         ):
             await DbManager().rm_complete_task(self.message.link)
         msg = f"<b>Name: </b><code>{escape(self.name)}</code>\n\n<b>Size: </b>{get_readable_file_size(self.size)}"
+        if error_msg:
+            msg += f"\n\n<b>Error: </b><code>{error_msg}</code>\n"
         LOGGER.info(f"Task Done: {self.name}")
         if self.isLeech:
             msg += f"\n<b>Total Files: </b>{folders}"
