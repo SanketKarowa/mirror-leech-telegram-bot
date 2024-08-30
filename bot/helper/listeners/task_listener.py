@@ -4,6 +4,7 @@ from asyncio import sleep, gather
 from html import escape
 from requests import utils as rutils
 from pyngrok import ngrok
+from os import environ
 from bot import (
     intervals,
     aria2,
@@ -69,6 +70,8 @@ class TaskListener(TaskConfig):
 
     async def get_ngrok_file_url(self) -> str:
         ngrok_url = ''
+        if environ.get('NGROK_AUTH_TOKEN') is None:
+            return ngrok_url
         try:
             if tunnels := ngrok.get_tunnels():
                 ngrok_url += f"{tunnels[0].public_url}/{self.dir.removeprefix(DOWNLOAD_DIR)}"
@@ -244,9 +247,9 @@ class TaskListener(TaskConfig):
             await rename(self.dir, new_dir)
             self.dir = new_dir
             up_path = f"{new_dir}/{self.name}"
-            folders, files = await count_files_and_folders(up_path, self.extensionFilter)
+            folders, files = await count_files_and_folders(up_path, self.extension_filter)
             mime_type = get_mime_type(up_path) if await aiopath.isfile(up_path) else "Folder"
-            if self.isYtDlp is True:
+            if self.is_ytdlp is True:
                 ytdl_path = f"{DOWNLOAD_DIR}ytdl"
                 if "audio" in mime_type:
                     ytdl_path = f"{ytdl_path}/audio"
@@ -259,7 +262,7 @@ class TaskListener(TaskConfig):
                 except Exception as e:
                     error_msg = f"Unable to move {self.name} to {ytdl_path} | error:: {e.__class__.__name__}"
                     LOGGER.error(error_msg)
-            await self.onUploadComplete(await self.get_ngrok_file_url(), files, folders, mime_type, error_msg)
+            await self.on_upload_complete(await self.get_ngrok_file_url(), files, folders, mime_type, error_msg)
         else:
             LOGGER.info(f"Rclone Upload Name: {self.name}")
             RCTransfer = RcloneTransferHelper(self)

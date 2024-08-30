@@ -194,10 +194,13 @@ def get_host_ngrok_info() -> str:
     return msg
 
 async def ngrok_info(client, message) -> None:
+    if environ.get('NGROK_AUTH_TOKEN') is None:
+        await send_message(message, "<code>NGROK_AUTH_TOKEN</code> <b>is missing !</b>")
+        return
     LOGGER.info("Getting ngrok tunnel info")
     try:
         if tunnels := ngrok.get_tunnels():
-            await sendMessage(message, f"🌐 <b>Bot file server</b>: <a href='{tunnels[0].public_url}'>Click Here</a>{get_host_ngrok_info()}")
+            await send_message(message, f"🌐 <b>Bot file server</b>: <a href='{tunnels[0].public_url}'>Click Here</a>{get_host_ngrok_info()}")
         else:
             raise IndexError("No tunnel found")
     except (IndexError, ngrok.PyngrokNgrokURLError, ngrok.PyngrokNgrokHTTPError):
@@ -207,10 +210,10 @@ async def ngrok_info(client, message) -> None:
                 ngrok.kill()
                 await sleep(1)
             file_tunnel = ngrok.connect(addr=f"file://{DOWNLOAD_DIR}", proto="http", schemes=["https"], name="files_tunnel", inspect=False)
-            await sendMessage(message, f"🌍 <b>Ngrok tunnel started\n⚡ Bot file server</b>: <a href='{file_tunnel.public_url}'>Click Here</a>{get_host_ngrok_info()}")
+            await send_message(message, f"🌍 <b>Ngrok tunnel started\n⚡ Bot file server</b>: <a href='{file_tunnel.public_url}'>Click Here</a>{get_host_ngrok_info()}")
         except ngrok.PyngrokError as err:
             LOGGER.error("Failed to start ngrok tunnel")
-            await sendMessage(message, f"⁉️ <b>Failed to get tunnel info</b>\nError: <code>{str(err)}</code>")
+            await send_message(message, f"⁉️ <b>Failed to get tunnel info</b>\nError: <code>{str(err)}</code>")
 
 help_string = f"""
 NOTE: Try each command without any argument to see more detalis.

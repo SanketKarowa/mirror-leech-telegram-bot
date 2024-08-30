@@ -145,7 +145,7 @@ async def _on_bt_download_complete(api, gid):
                 task_dict[task.listener.mid].start_time = seed_start_time
             LOGGER.info(f"Seeding started: {download.name} - Gid: {gid}")
             await update_status_message(task.listener.message.chat.id)
-        else:
+        #else:
             #await sync_to_async(api.remove, [download], force=True, files=True)
 
 

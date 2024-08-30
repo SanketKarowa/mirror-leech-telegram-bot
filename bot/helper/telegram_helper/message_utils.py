@@ -28,7 +28,7 @@ async def send_message(message, text, buttons=None, block=True):
     except (ButtonUrlInvalid, ButtonDataInvalid) as b:
         LOGGER.error(f"Error while sending message:: {b.__class__.__name__}, Retrying without button")
         await sleep(2)
-        return await sendMessage(message, text)
+        return await send_message(message, text)
     except Exception as e:
         LOGGER.error(str(e))
         return str(e)
@@ -50,7 +50,7 @@ async def edit_message(message, text, buttons=None, block=True):
     except (ButtonUrlInvalid, ButtonDataInvalid) as b:
         LOGGER.error(f"Error while editing message:: {b.__class__.__name__}, Retrying without button")
         await sleep(2)
-        return await editMessage(message, text)
+        return await edit_message(message, text)
     except Exception as e:
         LOGGER.error(str(e))
         return str(e)
