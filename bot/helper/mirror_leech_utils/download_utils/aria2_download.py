@@ -18,7 +18,7 @@ from ...mirror_leech_utils.status_utils.aria2_status import Aria2Status
 from ...telegram_helper.message_utils import send_status_message, send_message
 
 
-async def add_aria2c_download(listener, dpath, header, ratio, seed_time):
+async def add_aria2c_download(listener, dpath, header, ratio, seed_time, max_download_speed):
     a2c_opt = {**aria2_options}
     [a2c_opt.pop(k) for k in aria2c_global if k in aria2_options]
     a2c_opt["dir"] = dpath if getenv(key="ARIA_DOWNLOAD_PATH") is None else f'{getenv(key="ARIA_DOWNLOAD_PATH")}/{listener.mid}'
@@ -40,7 +40,9 @@ async def add_aria2c_download(listener, dpath, header, ratio, seed_time):
         else:
             a2c_opt["pause"] = "true"
     a2c_opt['bt-tracker'] = BT_TRACKERS_ARIA
-
+    if max_download_speed:
+        a2c_opt['max-download-limit'] = max_download_speed
+        LOGGER.info(f"Setting max-download-speed:: {max_download_speed}")
     try:
         download = (await sync_to_async(aria2.add, listener.link, a2c_opt))[0]
     except Exception as e:
