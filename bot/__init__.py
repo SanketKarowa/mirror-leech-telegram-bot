@@ -1,6 +1,6 @@
 from sys import exit
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from aria2p import API as ariaAPI, Client as ariaClient
+from aria2p import API as ariaAPI, Client as ariaClient, ClientException
 from asyncio import Lock, new_event_loop, set_event_loop
 from dotenv import load_dotenv, dotenv_values
 from logging import (
@@ -19,7 +19,7 @@ from os import remove, path as ospath, environ, makedirs
 from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
 from pyrogram import Client as TgClient, enums
-from qbittorrentapi import Client as QbClient
+from qbittorrentapi import Client as QbClient, exceptions
 from sabnzbdapi import SabnzbdClient
 from socket import setdefaulttimeout
 from subprocess import Popen, run
@@ -606,17 +606,20 @@ def start_ngrok() -> None:
 if (NGROK_AUTH_TOKEN := environ.get('NGROK_AUTH_TOKEN')) is not None:
     start_ngrok()
 
-qbittorrent_client = QbClient(
-    host="localhost",
-    port=8090,
-    VERIFY_WEBUI_CERTIFICATE=False,
-    REQUESTS_ARGS={"timeout": (30, 60)},
-    HTTPADAPTER_ARGS={
-        "pool_maxsize": 500,
-        "max_retries": 10,
-        "pool_block": True,
-    },
-)
+try:
+    qbittorrent_client = QbClient(
+        host="localhost",
+        port=8090,
+        VERIFY_WEBUI_CERTIFICATE=False,
+        REQUESTS_ARGS={"timeout": (30, 60)},
+        HTTPADAPTER_ARGS={
+            "pool_maxsize": 500,
+            "max_retries": 10,
+            "pool_block": True,
+        },
+    )
+except exceptions.APIError as e:
+    log_error(f"Failed to initialize qbittorrent:: {str(e)}")
 
 sabnzbd_client = SabnzbdClient(
     host="http://localhost",
@@ -672,12 +675,16 @@ def get_qb_options():
 
 get_qb_options()
 
-aria2 = ariaAPI(ariaClient(host=environ.get('ARIA_HOST', "http://localhost"), port=int(environ.get('ARIA_PORT', 6800)), secret=environ.get('ARIA_SECRET', "testing123")))
-if not aria2_options:
-    aria2_options = aria2.client.get_global_option()
+try:
+    aria2 = ariaAPI(ariaClient(host=environ.get('ARIA_HOST', "http://localhost"), port=int(environ.get('ARIA_PORT', 6800)), secret=environ.get('ARIA_SECRET', "testing123")))
+except ClientException as e:
+    log_error(f"Failed to initialize aria2:: {str(e)}")
 else:
-    a2c_glo = {op: aria2_options[op] for op in aria2c_global if op in aria2_options}
-    aria2.set_global_options(a2c_glo)
+    if not aria2_options:
+        aria2_options = aria2.client.get_global_option()
+    else:
+        a2c_glo = {op: aria2_options[op] for op in aria2c_global if op in aria2_options}
+        aria2.set_global_options(a2c_glo)
 
 
 async def get_nzb_options():
