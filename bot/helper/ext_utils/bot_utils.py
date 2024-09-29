@@ -236,7 +236,7 @@ async def get_cpu_temp() -> str:
     if cpu_temp is None:
         try:
             cpu_temp = f"{psutil.sensors_temperatures()['cpu_thermal'][0].current}°C"
-        except (AttributeError, IndexError):
+        except (AttributeError, IndexError, KeyError):
             pass
     if cpu_temp is None:
         try:
