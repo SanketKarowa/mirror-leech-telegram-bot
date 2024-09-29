@@ -27,6 +27,7 @@ from time import time
 from tzlocal import get_localzone
 from uvloop import install
 from pyngrok import ngrok, conf
+from urllib3.exceptions import HTTPError
 import requests
 
 # from faulthandler import enable as faulthandler_enable
@@ -677,7 +678,7 @@ get_qb_options()
 
 try:
     aria2 = ariaAPI(ariaClient(host=environ.get('ARIA_HOST', "http://localhost"), port=int(environ.get('ARIA_PORT', 6800)), secret=environ.get('ARIA_SECRET', "testing123")))
-except (ClientException, requests.exceptions.RequestException) as e:
+except (HTTPError, ClientException, requests.exceptions.RequestException) as e:
     log_error(f"Failed to initialize aria2:: {str(e)}")
 else:
     if not aria2_options:
