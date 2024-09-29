@@ -678,14 +678,13 @@ get_qb_options()
 
 try:
     aria2 = ariaAPI(ariaClient(host=environ.get('ARIA_HOST', "http://localhost"), port=int(environ.get('ARIA_PORT', 6800)), secret=environ.get('ARIA_SECRET', "testing123")))
-except (HTTPError, ClientException, requests.exceptions.RequestException) as e:
-    log_error(f"Failed to initialize aria2:: {str(e)}")
-else:
     if not aria2_options:
         aria2_options = aria2.client.get_global_option()
     else:
         a2c_glo = {op: aria2_options[op] for op in aria2c_global if op in aria2_options}
         aria2.set_global_options(a2c_glo)
+except (HTTPError, ClientException, requests.exceptions.RequestException) as e:
+    log_error(f"Failed to initialize aria2:: {str(e)}")
 
 
 async def get_nzb_options():
