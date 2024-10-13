@@ -74,7 +74,7 @@ async def add_qb_torrent(listener, path, ratio, seed_time):
             tor_info = tor_info[0]
             listener.name = tor_info.name
             ext_hash = tor_info.hash
-            LOGGER.info(f"Adding trackers to {ext_hash}")
+            LOGGER.info(f"Adding trackers to:: {ext_hash}, total trackers:: {len(BT_TRACKERS)}")
             try:
                 qbittorrent_client.torrents_add_trackers(torrent_hash=ext_hash, urls=BT_TRACKERS)
             except Exception as e:

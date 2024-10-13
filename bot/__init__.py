@@ -1,5 +1,7 @@
 from sys import exit
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.interval import IntervalTrigger
+from datetime import datetime, timedelta
 from aria2p import API as ariaAPI, Client as ariaClient, ClientException
 from asyncio import Lock, new_event_loop, set_event_loop
 from dotenv import load_dotenv, dotenv_values
@@ -118,35 +120,9 @@ BT_TRACKERS = []
 BT_TRACKERS_ARIA = ''
 TRACKER_URLS = [
     "https://cf.trackerslist.com/all.txt",
+    "https://ngosang.github.io/trackerslist/trackers_all_http.txt",
     "https://raw.githubusercontent.com/hezhijie0327/Trackerslist/main/trackerslist_tracker.txt"
 ]
-
-
-def get_trackers() -> None:
-    global BT_TRACKERS
-    global BT_TRACKERS_ARIA
-    log_info("Fetching trackers list")
-    BT_TRACKERS_ARIA += '['
-    for index, url in enumerate(TRACKER_URLS):
-        try:
-            track_resp = requests.get(url=url, timeout=5)
-            if track_resp.ok:
-                if index == 0:
-                    sep = '\n\n'
-                else:
-                    sep = '\n'
-                for tracker in track_resp.text.split(sep=sep):
-                    BT_TRACKERS.append(tracker.strip())
-                    BT_TRACKERS_ARIA += f"{tracker.strip()},"
-                track_resp.close()
-            else:
-                log_error(f"Failed to get data from {url}")
-        except requests.exceptions.RequestException:
-            log_error(f"Failed to send request to {url}")
-    BT_TRACKERS_ARIA += ']'
-    log_info(f"Retrieved {len(BT_TRACKERS)} trackers")
-
-get_trackers()
 
 try:
     if bool(environ.get("_____REMOVE_THIS_LINE_____")):
@@ -166,6 +142,33 @@ same_directory_lock = Lock()
 status_dict = {}
 task_dict = {}
 rss_dict = {}
+
+async def get_trackers() -> None:
+    global BT_TRACKERS
+    global BT_TRACKERS_ARIA
+    log_info("Fetching trackers list")
+    async with task_dict_lock:
+        BT_TRACKERS.clear()
+        BT_TRACKERS_ARIA = '['
+        for index, url in enumerate(TRACKER_URLS):
+            try:
+                track_resp = requests.get(url=url, timeout=5)
+                if track_resp.ok:
+                    if 0 <= index <= 1:
+                        sep = '\n\n'
+                    else:
+                        sep = '\n'
+                    for tracker in track_resp.text.split(sep=sep):
+                        BT_TRACKERS.append(tracker.strip())
+                        BT_TRACKERS_ARIA += f"{tracker.strip()},"
+                    track_resp.close()
+                else:
+                    log_error(f"Failed to get data from {url}")
+            except requests.exceptions.RequestException:
+                log_error(f"Failed to send request to {url}")
+        BT_TRACKERS_ARIA += ']'
+    log_info(f"Retrieved {len(BT_TRACKERS)} trackers")
+
 
 BOT_TOKEN = environ.get("BOT_TOKEN", "")
 if len(BOT_TOKEN) == 0:
@@ -657,6 +660,16 @@ bot = TgClient(
 bot_name = bot.me.username
 
 scheduler = AsyncIOScheduler(timezone=str(get_localzone()), event_loop=bot_loop)
+scheduler.add_job(
+        get_trackers,
+        trigger=IntervalTrigger(hours=12),
+        id="BT_TRACKERS",
+        name="GET_TRACKERS",
+        misfire_grace_time=15,
+        max_instances=1,
+        next_run_time=datetime.now() + timedelta(seconds=5),
+        replace_existing=True,
+    )
 
 
 def get_qb_options():
