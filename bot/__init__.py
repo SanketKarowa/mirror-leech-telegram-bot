@@ -98,6 +98,21 @@ if ospath.exists("/usr/src/app/token.pickle") is False and TOKEN_PICKLE_FILE_URL
             log_warning("Failed to get pickle file data")
         pickle_file.close()
 
+COOKIE_FILE_URL: str | None = environ.get('YT_COOKIE_URL')
+if COOKIE_FILE_URL is not None:
+    log_info("Downloading cookie file")
+    try:
+        cookie_file = requests.get(url=COOKIE_FILE_URL, timeout=5)
+    except requests.exceptions.RequestException:
+        log_error("Failed to download cookie file")
+    else:
+        if cookie_file.ok:
+            with open("/usr/src/app/cookies.txt", 'wt', encoding='utf-8') as f:
+                f.write(cookie_file.text)
+        else:
+            log_warning("Failed to get cookie file data")
+        cookie_file.close()
+
 
 intervals = {"status": {}, "qb": "", "jd": "", "nzb": "", "stopAll": False}
 qb_torrents = {}
