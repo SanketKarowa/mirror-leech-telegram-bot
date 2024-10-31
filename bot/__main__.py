@@ -315,6 +315,7 @@ async def main():
     if (IS_JD_ENABLE := environ.get('IS_JD_ENABLE')) is not None and IS_JD_ENABLE.lower() == "true":
         jdownloader.initiate()
     await gather(
+        jdownloader.boot(),
         #sync_to_async(clean_all),
         bot_settings.initiate_search_tools(),
         restart_notification(),
