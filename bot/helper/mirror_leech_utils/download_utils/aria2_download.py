@@ -38,6 +38,7 @@ async def add_aria2c_download(listener, dpath, header, ratio, seed_time, max_dow
         else:
             a2c_opt["pause"] = "true"
     a2c_opt['bt-tracker'] = BT_TRACKERS_ARIA
+    a2c_opt['file-allocation'] = 'none'
     if max_download_speed:
         a2c_opt['max-download-limit'] = max_download_speed
         LOGGER.info(f"Setting max-download-speed:: {max_download_speed}")
