@@ -109,6 +109,7 @@ class Mirror(TaskListener):
             "-cv": "",
             "-ns": "",
             "-tl": "",
+            "-ff": "None",
             "-ms": ""
         }
 
@@ -155,6 +156,12 @@ class Mirror(TaskListener):
             self.multi = int(args["-i"])
         except:
             self.multi = 0
+
+        try:
+            self.ffmpeg_cmds = eval(args["-ff"])
+        except Exception as e:
+            self.ffmpeg_cmds = None
+            LOGGER.error(e)
 
         if not isinstance(self.seed, bool):
             dargs = self.seed.split(":")

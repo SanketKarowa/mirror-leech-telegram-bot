@@ -188,6 +188,16 @@ class TaskListener(TaskConfig):
             up_dir, self.name = up_path.rsplit("/", 1)
             self.size = await get_path_size(up_dir)
 
+        if self.ffmpeg_cmds:
+            up_path = await self.proceed_ffmpeg(
+                up_path,
+                gid,
+            )
+            if self.is_cancelled:
+                return
+            up_dir, self.name = up_path.rsplit("/", 1)
+            self.size = await get_path_size(up_dir)
+
         if self.name_sub:
             up_path = await self.substitute(up_path)
             if self.is_cancelled:
@@ -203,7 +213,11 @@ class TaskListener(TaskConfig):
 
         if self.convert_audio or self.convert_video:
             up_path = await self.convert_media(
-                up_path, gid, unwanted_files, unwanted_files_size, files_to_delete
+                up_path,
+                gid,
+                unwanted_files,
+                unwanted_files_size,
+                files_to_delete,
             )
             if self.is_cancelled:
                 return
@@ -293,7 +307,7 @@ class TaskListener(TaskConfig):
             )
 
     async def on_upload_complete(
-        self, link, files, folders, mime_type, rclonePath="", dir_id="", error_msg=""
+        self, link, files, folders, mime_type, rclone_path="", dir_id="", error_msg=""
     ):
         if (
             self.is_super_chat
@@ -329,7 +343,7 @@ class TaskListener(TaskConfig):
                 msg += f"\n<b>Files: </b>{files}"
             if (
                 link
-                or rclonePath
+                or rclone_path
                 and config_dict["RCLONE_SERVE_URL"]
                 and not self.private_link
             ):
@@ -337,19 +351,19 @@ class TaskListener(TaskConfig):
                 if link:
                     buttons.url_button("☁️ Cloud Link", link)
                 else:
-                    msg += f"\n\nPath: <code>{rclonePath}</code>"
+                    msg += f"\n\nPath: <code>{rclone_path}</code>"
                 if (
-                    rclonePath
+                    rclone_path
                     and (RCLONE_SERVE_URL := config_dict["RCLONE_SERVE_URL"])
                     and not self.private_link
                 ):
-                    remote, path = rclonePath.split(":", 1)
+                    remote, path = rclone_path.split(":", 1)
                     url_path = rutils.quote(f"{path}")
                     share_url = f"{RCLONE_SERVE_URL}/{remote}/{url_path}"
                     if mime_type == "Folder":
                         share_url += "/"
                     buttons.url_button("🔗 Rclone Link", share_url)
-                if not rclonePath and dir_id:
+                if not rclone_path and dir_id:
                     INDEX_URL = ""
                     if self.private_link:
                         INDEX_URL = self.user_dict.get("index_url", "") or ""
@@ -363,7 +377,7 @@ class TaskListener(TaskConfig):
                             buttons.url_button("🌐 View Link", share_urls)
                 button = buttons.build_menu(2)
             else:
-                msg += f"\n\nPath: <code>{rclonePath}</code>"
+                msg += f"\n\nPath: <code>{rclone_path}</code>"
                 button = None
             msg += f"\n\n<b>cc: </b>{self.tag}"
             await send_message(self.message, msg, button)
